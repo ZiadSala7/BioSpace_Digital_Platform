@@ -77,7 +77,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           print('Profile avatar raw: ${profile['avatar']}');
           print('Profile avatar type: ${profile['avatar']?.runtimeType}');
           if (profile['avatar'] != null) {
-            final avatarUrl = ApiEndpoints.getImageUrl(profile['avatar']?.toString());
+            final avatarUrl =
+                ApiEndpoints.getImageUrl(profile['avatar']?.toString());
             print('Profile avatar URL: $avatarUrl');
             print('Avatar URL length: ${avatarUrl.length}');
             print('Avatar URL is empty: ${avatarUrl.isEmpty}');
@@ -362,7 +363,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   _buildRecommendedCourses(),
                                 ],
 
-                                const SizedBox(height: 140),
+                                // Extra bottom spacing so content isn't hidden behind BottomNav
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).padding.bottom +
+                                          110,
+                                ),
                               ],
                             ),
                           ),
@@ -385,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+          colors: [AppColors.primary, AppColors.primaryLight],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.largeCard),
@@ -481,8 +487,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         _userProfile!['avatar']?.toString(),
                                       ),
                                       fit: BoxFit.cover,
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
                                         return Container(
                                           color: Colors.white,
                                           child: const Center(
@@ -493,16 +501,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           ),
                                         );
                                       },
-                                      errorBuilder: (context, error, stackTrace) {
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
                                         if (kDebugMode) {
-                                          print('❌ Error loading avatar image: $error');
-                                          print('   Avatar URL: ${ApiEndpoints.getImageUrl(_userProfile!['avatar']?.toString())}');
+                                          print(
+                                              '❌ Error loading avatar image: $error');
+                                          print(
+                                              '   Avatar URL: ${ApiEndpoints.getImageUrl(_userProfile!['avatar']?.toString())}');
                                           print('   Stack trace: $stackTrace');
                                         }
                                         return Image.asset(
                                           'assets/images/student-avatar.png',
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Container(
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
                                             color: Colors.white,
                                             child: const Icon(
                                               Icons.person,
@@ -538,7 +550,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 Text(
                                   AppLocalizations.of(context)!.welcome(
                                       _userProfile?['name']?.toString() ??
-                                          AppLocalizations.of(context)!.visitor),
+                                          AppLocalizations.of(context)!
+                                              .visitor),
                                   style: GoogleFonts.cairo(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -555,7 +568,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -569,7 +583,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     .excellentStudent,
                                                 style: GoogleFonts.cairo(
                                                   fontSize: 11,
-                                                  color: Colors.white.withOpacity(0.9),
+                                                  color: Colors.white
+                                                      .withOpacity(0.9),
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
@@ -697,7 +712,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
               ),
               borderRadius: BorderRadius.circular(20), // Oval suffix
             ),
@@ -772,15 +787,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF7C3AED),
-                Color(0xFF5B21B6),
-                Color(0xFF4C1D95),
+                AppColors.primary,
+                AppColors.primaryLight,
+                AppColors.primaryDark,
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7C3AED).withOpacity(0.4),
+                color: AppColors.primary.withOpacity(0.4),
                 blurRadius: 25,
                 offset: const Offset(0, 12),
               ),
@@ -937,7 +952,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   style: GoogleFonts.cairo(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF7C3AED),
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -968,8 +983,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF7C3AED),
-                Color(0xFF5B21B6),
+                AppColors.primary,
+                AppColors.primaryLight,
                 Color(0xFF4C1D95),
               ],
             ),
@@ -1735,45 +1750,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: _categories.take(4).map((cat) {
+    final categories = _categories.take(4).toList();
+
+    return SizedBox(
+      height: 128,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final cat = categories[index];
           final categoryColor = _parseColor(cat['color']);
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                  left: cat == _categories.take(4).last ? 0 : 10),
-              child: GestureDetector(
-                onTap: () => context.push(RouteNames.categories),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+          return SizedBox(
+            width: 110,
+            child: GestureDetector(
+              onTap: () => context.push(RouteNames.categories),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppColors.border.withOpacity(0.8),
+                    width: 1,
                   ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: categoryColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: _getCategoryIcon(cat['icon'], categoryColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: categoryColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
+                      child: _getCategoryIcon(cat['icon'], categoryColor),
+                    ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
                         cat['name'] ?? cat['label'] ?? '',
                         textAlign: TextAlign.center,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.cairo(
                           fontSize: 12,
@@ -1781,20 +1810,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           color: AppColors.foreground,
                         ),
                       ),
-                      Text(
-                        '${cat['courses_count'] ?? cat['count'] ?? 0} دورة',
-                        style: GoogleFonts.cairo(
-                          fontSize: 10,
-                          color: AppColors.mutedForeground,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${cat['courses_count'] ?? cat['count'] ?? 0} دورة',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.cairo(
+                        fontSize: 10,
+                        color: AppColors.mutedForeground,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -2104,53 +2136,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildCategoriesSkeleton() {
     return Skeletonizer(
       enabled: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: List.generate(4, (index) {
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(left: index == 0 ? 0 : 10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: 128,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: 4,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            return SizedBox(
+              width: 110,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppColors.border.withOpacity(0.8),
+                    width: 1,
                   ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      const SizedBox(height: 10),
-                      Container(
-                        height: 12,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      height: 12,
+                      width: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        height: 10,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      height: 10,
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             );
-          }),
+          },
         ),
       ),
     );

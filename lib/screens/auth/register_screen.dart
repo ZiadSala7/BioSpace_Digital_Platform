@@ -137,13 +137,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: AppColors.beige,
       body: Column(
         children: [
-          // Purple Header (smaller for register)
+          // Header (uses AppColors)
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
               ),
             ),
             child: SafeArea(
@@ -177,7 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: GoogleFonts.cairo(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.primaryForeground,
                           ),
                         ),
                         const Spacer(),
@@ -189,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       AppLocalizations.of(context)!.joinUsMessage,
                       style: GoogleFonts.cairo(
                         fontSize: 15,
-                        color: Colors.white.withOpacity(0.85),
+                        color: AppColors.primaryForeground.withOpacity(0.85),
                       ),
                     ),
                   ],
@@ -302,12 +302,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   height: 22,
                                   decoration: BoxDecoration(
                                     color: _acceptTerms
-                                        ? AppColors.purple
+                                        ? AppColors.primary
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: _acceptTerms
-                                          ? AppColors.purple
+                                          ? AppColors.primary
                                           : AppColors.mutedForeground,
                                       width: 2,
                                     ),
@@ -332,7 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               .termsAndConditions,
                                           style: GoogleFonts.cairo(
                                             fontSize: 13,
-                                            color: AppColors.purple,
+                                            color: AppColors.primary,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -353,8 +353,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _handleRegister,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.purple,
-                              foregroundColor: Colors.white,
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.primaryForeground,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -396,7 +396,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   style: GoogleFonts.cairo(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.purple,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -458,10 +458,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.purple.withOpacity(0.08) : Colors.white,
+          color: isSelected ? AppColors.primary.withOpacity(0.08) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppColors.purple : AppColors.mutedForeground,
+            color: isSelected ? AppColors.primary : AppColors.mutedForeground,
             width: 1.2,
           ),
           boxShadow: [
@@ -482,10 +482,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color:
-                      isSelected ? AppColors.purple : AppColors.mutedForeground,
+                      isSelected ? AppColors.primary : AppColors.mutedForeground,
                   width: 2,
                 ),
-                color: isSelected ? AppColors.purple : Colors.transparent,
+                color: isSelected ? AppColors.primary : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(Icons.check, size: 12, color: Colors.white)
@@ -499,7 +499,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color:
-                      isSelected ? AppColors.purple : AppColors.mutedForeground,
+                      isSelected ? AppColors.primary : AppColors.mutedForeground,
                 ),
               ),
             ),
@@ -521,6 +521,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.25),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -540,7 +544,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hintText: hint,
           hintStyle:
               GoogleFonts.cairo(color: AppColors.mutedForeground, fontSize: 14),
-          prefixIcon: Icon(icon, color: AppColors.purple, size: 22),
+          prefixIcon: Icon(icon, color: AppColors.primary, size: 22),
           suffixIcon: isPassword
               ? IconButton(
                   onPressed: () => setState(() {

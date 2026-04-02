@@ -102,7 +102,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                  colors: [AppColors.primary, AppColors.primaryLight],
                 ),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(AppRadius.largeCard),

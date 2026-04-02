@@ -77,9 +77,9 @@ class EducationalApp extends StatelessWidget {
                 GlobalCupertinoLocalizations.delegate,
               ],
 
-              // Theme - use API config if available
-              theme: AppTheme.lightTheme(configProvider.config?.theme),
-              darkTheme: AppTheme.darkTheme(configProvider.config?.theme),
+              // Theme - AppColors palette
+              theme: AppTheme.lightTheme(),
+              darkTheme: AppTheme.darkTheme(),
               themeMode: themeProvider.themeMode,
 
               // Router

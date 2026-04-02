@@ -179,7 +179,7 @@ class _InstructorCourseDetailsScreenState
         controller: _tabController,
         indicator: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+            colors: [AppColors.primary, AppColors.primaryLight],
           ),
           borderRadius: BorderRadius.circular(14),
         ),

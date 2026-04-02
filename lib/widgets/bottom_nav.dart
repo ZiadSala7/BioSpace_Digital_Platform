@@ -21,88 +21,78 @@ class BottomNav extends StatelessWidget {
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          left: 24,
-          right: 24,
-          top: 16,
-        ),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 380),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withOpacity(0.85),
-                        Colors.white.withOpacity(0.75),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.card.withOpacity(0.78),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: AppColors.border.withOpacity(0.7),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.10),
+                          blurRadius: 30,
+                          offset: const Offset(0, 6),
+                          spreadRadius: -12,
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.5),
-                      width: 1.5,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _NavItem(
+                          icon: Icons.home_rounded,
+                          label: context.l10n.home,
+                          id: 'home',
+                          activeTab: activeTab,
+                          onTap: () => context.go(RouteNames.home),
+                        ),
+                        _NavItem(
+                          icon: Icons.grid_view_rounded,
+                          label: context.l10n.courses,
+                          id: 'courses',
+                          activeTab: activeTab,
+                          onTap: () => context.go(RouteNames.allCourses),
+                        ),
+                        _CenterNavItem(
+                          activeTab: activeTab,
+                          onTap: () => context.go(RouteNames.progress),
+                        ),
+                        _NavItem(
+                          icon: Icons.menu_book_rounded,
+                          label: context.l10n.myCourses,
+                          id: 'enrolled',
+                          activeTab: activeTab,
+                          onTap: () => context.push(RouteNames.enrolled),
+                        ),
+                        _NavItem(
+                          icon: Icons.person_rounded,
+                          label: context.l10n.myAccount,
+                          id: 'dashboard',
+                          activeTab: activeTab,
+                          onTap: () => context.go(RouteNames.dashboard),
+                        ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                        spreadRadius: 0,
-                      ),
-                      BoxShadow(
-                        color: AppColors.purple.withOpacity(0.1),
-                        blurRadius: 40,
-                        offset: const Offset(0, 4),
-                        spreadRadius: -10,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _NavItem(
-                        icon: Icons.home_rounded,
-                        label: context.l10n.home,
-                        id: 'home',
-                        activeTab: activeTab,
-                        onTap: () => context.go(RouteNames.home),
-                      ),
-                      _NavItem(
-                        icon: Icons.grid_view_rounded,
-                        label: context.l10n.courses,
-                        id: 'courses',
-                        activeTab: activeTab,
-                        onTap: () => context.go(RouteNames.allCourses),
-                      ),
-                      _CenterNavItem(
-                        activeTab: activeTab,
-                        onTap: () => context.go(RouteNames.progress),
-                      ),
-                      _NavItem(
-                        icon: Icons.menu_book_rounded,
-                        label: context.l10n.myCourses,
-                        id: 'enrolled',
-                        activeTab: activeTab,
-                        onTap: () => context.push(RouteNames.enrolled),
-                      ),
-                      _NavItem(
-                        icon: Icons.person_rounded,
-                        label: context.l10n.myAccount,
-                        id: 'dashboard',
-                        activeTab: activeTab,
-                        onTap: () => context.go(RouteNames.dashboard),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -132,6 +122,8 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = activeTab == id;
+    final activeColor = AppColors.primary;
+    final inactiveColor = AppColors.mutedForeground;
 
     return GestureDetector(
       onTap: onTap,
@@ -149,8 +141,8 @@ class _NavItem extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.purple.withOpacity(0.15),
-                    AppColors.purple.withOpacity(0.08),
+                    activeColor.withOpacity(0.14),
+                    activeColor.withOpacity(0.06),
                   ],
                 )
               : null,
@@ -163,17 +155,23 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 250),
               child: Icon(
                 icon,
-                size: isActive ? 26 : 24,
-                color: isActive ? AppColors.purple : Colors.grey[500],
+                size: isActive ? 24 : 22,
+                color: isActive ? activeColor : inactiveColor,
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.cairo(
-                fontSize: isActive ? 11 : 10,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? AppColors.purple : Colors.grey[500],
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 56),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontSize: isActive ? 10 : 9,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? activeColor : inactiveColor,
+                ),
               ),
             ),
           ],
@@ -206,8 +204,8 @@ class _CenterNavItem extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF7C3AED),
-              Color(0xFF5B21B6),
+              AppColors.primary,
+              AppColors.primaryLight,
             ],
           ),
           shape: BoxShape.circle,

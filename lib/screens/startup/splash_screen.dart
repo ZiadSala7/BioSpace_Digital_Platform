@@ -238,9 +238,9 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF7C3AED),
-              Color(0xFF5B21B6),
-              Color(0xFF4C1D95),
+              AppColors.primary,
+              AppColors.primaryLight,
+              AppColors.primaryDark,
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -447,7 +447,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(35),
                     child: Image.asset(
-                      'assets/images/play_store_512.png',
+                      'assets/images/bioSpace.jpeg',
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         decoration: BoxDecoration(

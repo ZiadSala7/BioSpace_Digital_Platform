@@ -1,64 +1,63 @@
 import 'package:flutter/material.dart';
 
-/// App Colors - Exact match to React CSS variables
-/// Source: app/globals.css
+/// App Colors - BioSpace Egypt Brand Palette
 class AppColors {
   AppColors._();
 
-  // Base colors from CSS
-  static const Color background = Color(0xFFF5EBE0); // --beige
-  static const Color foreground = Color(0xFF1A1A2E); // --foreground
-  static const Color card = Color(0xFFFFFFFF); // --card
-  static const Color cardForeground = Color(0xFF1A1A2E); // --card-foreground
+  // Base colors
+  static const Color background = Color(0xFFF9F5F6); // Off White
+  static const Color foreground = Color(0xFF1A1A1A); // Near Black
+  static const Color card = Color(0xFFFFFFFF); // Pure White
+  static const Color cardForeground = Color(0xFF1A1A1A); // Near Black
 
-  // Primary colors
-  static const Color primary = Color(0xFF7C6AEF); // --purple
-  static const Color primaryForeground = Color(0xFFFFFFFF); // --primary-foreground
-  static const Color primaryDark = Color(0xFF5A4FCF); // --purple-dark
-  static const Color primaryLight = Color(0xFFA594F9); // --purple-light
+  // Primary colors (Burgundy)
+  static const Color primary = Color(0xFF6B1A38); // Burgundy
+  static const Color primaryForeground = Color(0xFFFFFFFF);
+  static const Color primaryDark = Color(0xFF4A0F27); // Primary Dark
+  static const Color primaryLight = Color(0xFF8C2147); // Deep Rose
 
-  // Secondary colors
-  static const Color secondary = Color(0xFFF8A65D); // --orange
-  static const Color secondaryForeground = Color(0xFF1A1A2E); // --secondary-foreground
-  static const Color secondaryLight = Color(0xFFFEC89A); // --orange-light
+  // Secondary colors (Gold accent)
+  static const Color secondary = Color(0xFFC4873A); // Gold
+  static const Color secondaryForeground = Color(0xFF1A1A1A);
+  static const Color secondaryLight = Color(0xFFDFAB6E); // Gold Light
 
-  // Muted colors
-  static const Color muted = Color(0xFFE8DDD4); // --beige-dark / --muted
-  static const Color mutedForeground = Color(0xFF6B6B7B); // --muted-foreground
+  // Muted colors (Blush tones)
+  static const Color muted = Color(0xFFE8C5D0); // Soft Rose
+  static const Color mutedForeground = Color(0xFF555555); // Charcoal
 
-  // Accent colors
-  static const Color accent = Color(0xFF2D2D3A); // --dark / --accent
-  static const Color accentForeground = Color(0xFFFFFFFF); // --accent-foreground
-  static const Color darkCard = Color(0xFF1E1E2D); // --dark-card
+  // Accent colors (Midnight Blue)
+  static const Color accent = Color(0xFF3A4A6B); // Midnight Blue
+  static const Color accentForeground = Color(0xFFFFFFFF);
+  static const Color darkCard = Color(0xFF1A1A1A); // Near Black
 
   // Border & Input
-  static const Color border = Color(0xFFE8DDD4); // --border
-  static const Color input = Color(0xFFFFFFFF); // --input
-  static const Color ring = Color(0xFF7C6AEF); // --ring
+  static const Color border = Color(0xFFE8C5D0); // Soft Rose
+  static const Color input = Color(0xFFFFFFFF);
+  static const Color ring = Color(0xFF6B1A38); // Burgundy
 
   // Custom app colors
-  static const Color beige = Color(0xFFF5EBE0); // --beige
-  static const Color beigeDark = Color(0xFFE8DDD4); // --beige-dark
-  static const Color orange = Color(0xFFF8A65D); // --orange
-  static const Color orangeLight = Color(0xFFFEC89A); // --orange-light
-  static const Color purple = Color(0xFF7C6AEF); // --purple
-  static const Color purpleLight = Color(0xFFA594F9); // --purple-light
-  static const Color purpleDark = Color(0xFF5A4FCF); // --purple-dark
-  static const Color dark = Color(0xFF2D2D3A); // --dark
-  static const Color lavender = Color(0xFFC4B5FD); // --lavender
-  static const Color lavenderLight = Color(0xFFE9E3FF); // --lavender-light
+  static const Color beige = Color(0xFFF9F5F6); // Off White
+  static const Color beigeDark = Color(0xFFF5E8ED); // Blush
+  static const Color orange = Color(0xFFC4873A); // Gold
+  static const Color orangeLight = Color(0xFFDFAB6E); // Gold Light
+  static const Color purple = primary; // Legacy alias
+  static const Color purpleLight = primaryLight; // Legacy alias
+  static const Color purpleDark = primaryDark; // Legacy alias
+  static const Color dark = Color(0xFF1A1A1A); // Near Black
+  static const Color lavender = Color(0xFFC4768F); // Muted Rose
+  static const Color lavenderLight = Color(0xFFF5E8ED); // Blush
 
   // Semantic colors
   static const Color destructive = Color(0xFFDC2626);
   static const Color destructiveForeground = Color(0xFFDC2626);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color info = Color(0xFF3B82F6);
+  static const Color success = Color(0xFF2C6B5A); // Deep Teal
+  static const Color warning = Color(0xFFC4873A); // Gold
+  static const Color info = Color(0xFF3A4A6B); // Midnight Blue
 
   // Bottom navigation
   static const Color bottomNavBackground = Color(0xFF1A1A1A);
   static const Color bottomNavActive = Color(0xFFFFFFFF);
-  static const Color bottomNavInactive = Color(0xFF9CA3AF);
+  static const Color bottomNavInactive = Color(0xFF555555); // Charcoal
 
   // Overlay colors
   static const Color whiteOverlay20 = Color(0x33FFFFFF);
@@ -66,4 +65,3 @@ class AppColors {
   static const Color whiteOverlay10 = Color(0x1AFFFFFF);
   static const Color blackOverlay20 = Color(0x33000000);
 }
-

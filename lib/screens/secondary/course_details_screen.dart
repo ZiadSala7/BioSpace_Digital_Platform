@@ -815,7 +815,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         controller: _tabController,
         indicator: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+            colors: [AppColors.primary, AppColors.primaryLight],
           ),
           borderRadius: BorderRadius.circular(14),
         ),
@@ -1289,7 +1289,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               decoration: BoxDecoration(
                 gradient: isSelected
                     ? const LinearGradient(
-                        colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                        colors: [AppColors.primary, AppColors.primaryLight],
                       )
                     : isCompleted
                         ? const LinearGradient(
@@ -1567,7 +1567,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
             ? const LinearGradient(
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
-                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
               )
             : null,
         color: isTrial ? null : Colors.white,
@@ -1949,7 +1949,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                     gradient: _isEnrolling
                         ? null
                         : const LinearGradient(
-                            colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                            colors: [AppColors.primary, AppColors.primaryLight],
                           ),
                     color: _isEnrolling ? Colors.grey[300] : null,
                     borderRadius: BorderRadius.circular(16),
@@ -3044,7 +3044,7 @@ class _TrialExamScreenState extends State<TrialExamScreen> {
                 decoration: BoxDecoration(
                   gradient: (_hasSelectedAnswer && !_isSubmitting)
                       ? const LinearGradient(
-                          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)])
+                          colors: [AppColors.primary, AppColors.primaryLight])
                       : null,
                   color: (!_hasSelectedAnswer || _isSubmitting)
                       ? Colors.grey[300]
@@ -3174,7 +3174,7 @@ class _TrialExamScreenState extends State<TrialExamScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)]),
+                          colors: [AppColors.primary, AppColors.primaryLight]),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(

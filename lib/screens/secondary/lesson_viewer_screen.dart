@@ -1685,7 +1685,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
         decoration: BoxDecoration(
           gradient: isPrimary
               ? const LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)])
+                  colors: [AppColors.primary, AppColors.primaryLight])
               : null,
           color: isPrimary ? null : Colors.white,
           borderRadius: BorderRadius.circular(16),

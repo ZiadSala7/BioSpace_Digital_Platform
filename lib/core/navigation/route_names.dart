@@ -48,4 +48,13 @@ class RouteNames {
   static const String teacherDetails = '/teacher-details';
   static const String chatConversations = '/chat';
   static const String chatMessages = '/chat/:conversationId';
+
+  // BioSpace learning (Phase 1)
+  static const String biospaceCourses = '/biospace/courses';
+  static const String biospaceCourseDetail = '/biospace/courses/:courseId';
+  static const String biospaceWaveDetail = '/biospace/waves/:waveId';
+  static const String biospacePlayer = '/biospace/player';
+  static const String biospaceQuiz = '/biospace/waves/:waveId/quiz';
+  static const String biospaceCertificates = '/biospace/certificates';
+  static const String biospaceAttendance = '/biospace/attendance';
 }

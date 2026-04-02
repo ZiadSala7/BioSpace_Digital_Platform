@@ -236,7 +236,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 14,
                               mainAxisSpacing: 14,
-                              childAspectRatio: 0.68,
+                              childAspectRatio: 0.60,
                             ),
                             itemCount: _courses.length,
                             itemBuilder: (context, index) {
@@ -259,7 +259,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+          colors: [AppColors.primary, AppColors.primaryLight],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.largeCard),
@@ -400,8 +400,8 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                             decoration: BoxDecoration(
                               gradient: isSelected
                                   ? const LinearGradient(colors: [
-                                      Color(0xFF7C3AED),
-                                      Color(0xFF5B21B6)
+                                      AppColors.primary,
+                                      AppColors.primaryLight
                                     ])
                                   : null,
                               color: isSelected ? null : Colors.white,
@@ -896,7 +896,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 14,
           mainAxisSpacing: 14,
-          childAspectRatio: 0.68,
+          childAspectRatio: 0.60,
         ),
         itemCount: 6,
         itemBuilder: (context, index) {

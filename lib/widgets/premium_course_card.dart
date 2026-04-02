@@ -167,7 +167,7 @@ class PremiumCourseCard extends StatelessWidget {
                     height: 44,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                        colors: [AppColors.primary, AppColors.primaryLight],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [

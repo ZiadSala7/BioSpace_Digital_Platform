@@ -75,13 +75,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       backgroundColor: AppColors.beige,
       body: Column(
         children: [
-          // Purple Header
+          // Header (uses AppColors)
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
               ),
             ),
             child: SafeArea(
@@ -115,7 +115,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           style: GoogleFonts.cairo(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.primaryForeground,
                           ),
                         ),
                         const Spacer(),
@@ -143,7 +143,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       style: GoogleFonts.cairo(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.primaryForeground,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -152,7 +152,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.cairo(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
+                        color: AppColors.primaryForeground.withOpacity(0.9),
                       ),
                     ),
                   ],
@@ -212,8 +212,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _handleForgotPassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.purple,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.primaryForeground,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -248,7 +248,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 style: GoogleFonts.cairo(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.purple,
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -301,7 +301,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           style: GoogleFonts.cairo(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.purple,
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(height: 40),
@@ -311,8 +311,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: ElevatedButton(
             onPressed: () => context.go(RouteNames.login),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.purple,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.primaryForeground,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -370,6 +370,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.25),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -388,7 +392,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             color: AppColors.mutedForeground,
             fontSize: 14,
           ),
-          prefixIcon: Icon(icon, color: AppColors.purple, size: 22),
+          prefixIcon: Icon(icon, color: AppColors.primary, size: 22),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,

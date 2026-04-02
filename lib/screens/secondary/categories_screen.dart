@@ -71,7 +71,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   Color _parseColor(dynamic colorValue) {
     // Return default if null
     if (colorValue == null) {
-      return AppColors.purple;
+      return AppColors.primary;
     }
 
     // If already a Color, return it
@@ -87,7 +87,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
         // Handle empty string
         if (hex.isEmpty) {
-          return AppColors.purple;
+          return AppColors.primary;
         }
 
         // Parse hex color
@@ -106,7 +106,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         if (kDebugMode) {
           print('⚠️ Error parsing color "$colorValue": $e');
         }
-        return AppColors.purple;
+        return AppColors.primary;
       }
     }
 
@@ -114,7 +114,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     if (kDebugMode) {
       print('⚠️ Unknown color type: ${colorValue.runtimeType}');
     }
-    return AppColors.purple;
+    return AppColors.primary;
   }
 
   IconData _getCategoryIcon(String? iconUrl) {
@@ -170,7 +170,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return Icon(
         icon,
         size: 32,
-        color: color,
+        color: AppColors.primary,
       );
     }
 
@@ -208,7 +208,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                         loadingProgress.expectedTotalBytes!
                     : null,
                 strokeWidth: 2,
-                color: color,
+                color: AppColors.primary,
               ),
             );
           },
@@ -222,7 +222,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             return Icon(
               icon,
               size: 32,
-              color: color,
+              color: AppColors.primary,
             );
           },
         ),
@@ -235,7 +235,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       return Icon(
         icon,
         size: 32,
-        color: color,
+        color: AppColors.primary,
       );
     }
   }
@@ -281,7 +281,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 // Header - matches React: bg-[var(--purple)] rounded-b-[3rem] pt-4 pb-8 px-4
                 Container(
                   decoration: const BoxDecoration(
-                    color: AppColors.purple,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(AppRadius.largeCard),
                       bottomRight: Radius.circular(AppRadius.largeCard),
@@ -302,7 +302,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                             onTap: () => context.pop(),
                             child: Container(
                               width: 40, // w-10
-                              height: 100, // h-10
+                              height: 40, // h-10
                               decoration: const BoxDecoration(
                                 color: AppColors.whiteOverlay20, // bg-white/20
                                 shape: BoxShape.circle,
@@ -337,229 +337,172 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 ),
 
                 // Categories Grid - matches React: px-4 -mt-6
-                SizedBox(
-                  height: 700,
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          child: Transform.translate(
-                            offset: const Offset(0, -24), // -mt-6 = -24px
-                            child: _isLoading
-                                ? _buildLoadingState()
-                                : _categories.isEmpty
-                                    ? _buildEmptyState()
-                                    : RefreshIndicator(
-                                        onRefresh: _loadCategories,
-                                        child: SingleChildScrollView(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16), // px-4
-                                          physics:
-                                              const AlwaysScrollableScrollPhysics(),
-                                          child: GridView.builder(
-                                            shrinkWrap: true,
-                                            physics:
-                                                const NeverScrollableScrollPhysics(),
-                                            gridDelegate:
-                                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                              crossAxisCount: 2,
-                                              crossAxisSpacing: 16, // gap-4
-                                              mainAxisSpacing: 16, // gap-4
-                                              childAspectRatio: 0.85,
+                Expanded(
+                  child: Transform.translate(
+                    offset: const Offset(0, -24), // -mt-6 = -24px
+                    child: _isLoading
+                        ? _buildLoadingState()
+                        : _categories.isEmpty
+                            ? _buildEmptyState()
+                            : RefreshIndicator(
+                                onRefresh: _loadCategories,
+                                child: GridView.builder(
+                                  padding: EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    MediaQuery.of(context).padding.bottom + 140,
+                                  ),
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 16, // gap-4
+                                    mainAxisSpacing: 16, // gap-4
+                                    childAspectRatio: 0.85,
+                                  ),
+                                  itemCount: _categories.length,
+                                  itemBuilder: (context, index) {
+                                    final category = _categories[index];
+                                    final colorValue = category['color'];
+                                    final Color color = _parseColor(colorValue);
+                                    final iconUrl =
+                                        category['icon']?.toString();
+                                    final icon = _getCategoryIcon(iconUrl);
+                                    final name =
+                                        category['name_ar']?.toString() ??
+                                            category['name']?.toString() ??
+                                            'التصنيف';
+                                    final coursesCount =
+                                        (category['courses_count'] as num?)
+                                                ?.toInt() ??
+                                            0;
+
+                                    return TweenAnimationBuilder<double>(
+                                      tween: Tween(begin: 0.0, end: 1.0),
+                                      duration: Duration(
+                                          milliseconds: 500 + (index * 50)),
+                                      builder: (context, value, child) {
+                                        return Opacity(
+                                          opacity: value,
+                                          child: Transform.scale(
+                                            scale: 0.8 + (value * 0.2),
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: GestureDetector(
+                                        onTap: () =>
+                                            _handleCategoryClick(category),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(24),
+                                            border: Border.all(
+                                              color: AppColors.border
+                                                  .withOpacity(0.7),
+                                              width: 1,
                                             ),
-                                            itemCount: _categories.length,
-                                            itemBuilder: (context, index) {
-                                              final category =
-                                                  _categories[index];
-                                              final colorValue =
-                                                  category['color'];
-                                              final Color color =
-                                                  _parseColor(colorValue);
-                                              final iconUrl =
-                                                  category['icon']?.toString();
-                                              final icon =
-                                                  _getCategoryIcon(iconUrl);
-                                              final name = category['name_ar']
-                                                      ?.toString() ??
-                                                  category['name']
-                                                      ?.toString() ??
-                                                  'التصنيف';
-                                              final coursesCount =
-                                                  (category['courses_count']
-                                                              as num?)
-                                                          ?.toInt() ??
-                                                      0;
-
-                                              return TweenAnimationBuilder<
-                                                  double>(
-                                                tween:
-                                                    Tween(begin: 0.0, end: 1.0),
-                                                duration: Duration(
-                                                    milliseconds:
-                                                        500 + (index * 50)),
-                                                builder:
-                                                    (context, value, child) {
-                                                  return Opacity(
-                                                    opacity: value,
-                                                    child: Transform.scale(
-                                                      scale:
-                                                          0.8 + (value * 0.2),
-                                                      child: child,
-                                                    ),
-                                                  );
-                                                },
-                                                child: GestureDetector(
-                                                  onTap: () =>
-                                                      _handleCategoryClick(
-                                                          category),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              24), // rounded-3xl
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black
-                                                              .withOpacity(
-                                                                  0.05), // shadow-sm
-                                                          blurRadius: 4,
-                                                          offset: const Offset(
-                                                              0, 2),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Stack(
-                                                      children: [
-                                                        // Gradient overlay on hover (simulated)
-                                                        Positioned.fill(
-                                                          child: Container(
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          24),
-                                                              gradient:
-                                                                  LinearGradient(
-                                                                begin: Alignment
-                                                                    .topLeft,
-                                                                end: Alignment
-                                                                    .bottomRight,
-                                                                colors: [
-                                                                  color
-                                                                      .withOpacity(
-                                                                          0.1),
-                                                                  color
-                                                                      .withOpacity(
-                                                                          0.05),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-
-                                                        // Content - matches React: p-5
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .all(
-                                                                  20), // p-5
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              // Icon - matches React: w-16 h-16 rounded-2xl mb-4
-                                                              Container(
-                                                                width:
-                                                                    64, // w-16
-                                                                height:
-                                                                    64, // h-16
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: color
-                                                                      .withOpacity(
-                                                                          0.15), // color15
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              16), // rounded-2xl
-                                                                ),
-                                                                child:
-                                                                    _buildCategoryIcon(
-                                                                  iconUrl:
-                                                                      iconUrl,
-                                                                  icon: icon,
-                                                                  color: color,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                  height:
-                                                                      16), // mb-4
-
-                                                              // Title - matches React: font-bold text-lg mb-1
-                                                              Text(
-                                                                name,
-                                                                style:
-                                                                    AppTextStyles
-                                                                        .h4(
-                                                                  color: AppColors
-                                                                      .foreground,
-                                                                ),
-                                                                maxLines: 2,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                              ),
-                                                              const SizedBox(
-                                                                  height:
-                                                                      4), // mb-1
-
-                                                              // Courses count - matches React: text-sm
-                                                              Text(
-                                                                '$coursesCount ${coursesCount == 1 ? 'دورة' : 'دورات'}',
-                                                                style: AppTextStyles
-                                                                    .bodySmall(
-                                                                  color: AppColors
-                                                                      .mutedForeground,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-
-                                                        // Animated corner accent
-                                                        Positioned(
-                                                          bottom: -16,
-                                                          left: -16,
-                                                          child: Container(
-                                                            width: 64, // w-16
-                                                            height: 64, // h-16
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: color
-                                                                  .withOpacity(
-                                                                      0.2),
-                                                              shape: BoxShape
-                                                                  .circle,
-                                                            ),
-                                                          ),
-                                                        ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.05),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Stack(
+                                            children: [
+                                              Positioned.fill(
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            24),
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                      colors: [
+                                                        AppColors.primary
+                                                            .withOpacity(0.10),
+                                                        AppColors.primaryLight
+                                                            .withOpacity(0.06),
                                                       ],
                                                     ),
                                                   ),
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(20),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Container(
+                                                      width: 64,
+                                                      height: 64,
+                                                      decoration: BoxDecoration(
+                                                        color: color
+                                                            .withOpacity(0.12),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16),
+                                                      ),
+                                                      child: _buildCategoryIcon(
+                                                        iconUrl: iconUrl,
+                                                        icon: icon,
+                                                        color: color,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    Text(
+                                                      name,
+                                                      style: AppTextStyles.h4(
+                                                        color: AppColors
+                                                            .foreground,
+                                                      ),
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      '$coursesCount ${coursesCount == 1 ? 'دورة' : 'دورات'}',
+                                                      style: AppTextStyles
+                                                          .bodySmall(
+                                                        color: AppColors
+                                                            .mutedForeground,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Positioned(
+                                                bottom: -16,
+                                                left: -16,
+                                                child: Container(
+                                                  width: 64,
+                                                  height: 64,
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.primary
+                                                        .withOpacity(0.14),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
-                          ),
-                        ),
-                      ],
-                    ),
+                                    );
+                                  },
+                                ),
+                              ),
                   ),
                 ),
               ],
@@ -643,13 +586,13 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppColors.purple.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.category_rounded,
                 size: 48,
-                color: AppColors.purple,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 16),

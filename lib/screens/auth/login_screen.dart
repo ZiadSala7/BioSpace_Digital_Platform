@@ -176,13 +176,13 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: AppColors.beige,
       body: Column(
         children: [
-          // Purple Header
+          // Header (uses AppColors)
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
               ),
             ),
             child: SafeArea(
@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.cairo(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.primaryForeground,
                           ),
                         ),
                         const Spacer(),
@@ -261,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.cairo(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.primaryForeground,
                       ),
                     ),
                   ],
@@ -324,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               AppLocalizations.of(context)!.forgotPassword,
                               style: GoogleFonts.cairo(
                                 fontSize: 13,
-                                color: AppColors.purple,
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -339,8 +339,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.purple,
-                              foregroundColor: Colors.white,
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.primaryForeground,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -432,7 +432,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.cairo(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.purple,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -473,6 +473,10 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.25),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -490,7 +494,7 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: hint,
           hintStyle:
               GoogleFonts.cairo(color: AppColors.mutedForeground, fontSize: 14),
-          prefixIcon: Icon(icon, color: AppColors.purple, size: 22),
+          prefixIcon: Icon(icon, color: AppColors.primary, size: 22),
           suffixIcon: isPassword
               ? IconButton(
                   onPressed: () =>

@@ -161,7 +161,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                  colors: [AppColors.primary, AppColors.primaryLight],
                 ),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
@@ -239,7 +239,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                             height: 100,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                                colors: [AppColors.primary, AppColors.primaryLight],
                               ),
                               shape: BoxShape.circle,
                               boxShadow: [
@@ -313,7 +313,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                                colors: [AppColors.primary, AppColors.primaryLight],
                               ),
                               borderRadius: BorderRadius.circular(18),
                               boxShadow: [
@@ -387,7 +387,7 @@ class _ExamsScreenState extends State<ExamsScreen>
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
               ),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(AppRadius.largeCard),
@@ -672,8 +672,8 @@ class _ExamsScreenState extends State<ExamsScreen>
                                   const Color(0xFF059669)
                                 ]
                               : [
-                                  const Color(0xFF7C3AED),
-                                  const Color(0xFF5B21B6)
+                                  AppColors.primary,
+                                  AppColors.primaryLight
                                 ],
                         ),
                         borderRadius: BorderRadius.circular(16),
@@ -831,7 +831,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                      colors: [AppColors.primary, AppColors.primaryLight],
                     ),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [

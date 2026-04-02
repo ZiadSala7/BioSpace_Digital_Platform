@@ -202,7 +202,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         'icon': Icons.menu_book_rounded,
         'label': l10n.enrolledLessons,
         'subtitle': l10n.activeCourse(enrolledCourses),
-        'color': const Color(0xFF7C3AED),
+        'color': AppColors.primary,
         'bgColor': const Color(0xFFEDE9FE),
         'onTap': () => context.push(RouteNames.enrolled),
         'showFor': ['online', 'offline'], // Show for both
@@ -406,7 +406,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+          colors: [AppColors.primary, AppColors.primaryLight],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.largeCard),

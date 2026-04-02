@@ -334,7 +334,7 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+          colors: [AppColors.primary, AppColors.primaryLight],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.largeCard),

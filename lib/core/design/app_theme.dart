@@ -2,20 +2,18 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 import 'app_radius.dart';
-import '../../models/app_config.dart';
 
 /// App Theme Configuration
 class AppTheme {
   AppTheme._();
 
-  static ThemeData lightTheme([ThemeConfig? themeConfig]) {
-    // Use API config colors if provided, otherwise use default AppColors
-    final primaryColor = themeConfig?.getPrimaryColor() ?? AppColors.primary;
-    final secondaryColor = themeConfig?.getSecondaryColor() ?? AppColors.secondary;
-    final cardColor = themeConfig?.getCardColor() ?? AppColors.card;
-    final backgroundColor = themeConfig?.getBackgroundColor() ?? AppColors.background;
-    final errorColor = themeConfig?.getErrorColor() ?? AppColors.destructive;
-    final textColor = themeConfig?.getTextColor() ?? AppColors.foreground;
+  static ThemeData lightTheme() {
+    final primaryColor = AppColors.primary;
+    final secondaryColor = AppColors.secondary;
+    final cardColor = AppColors.card;
+    final backgroundColor = AppColors.background;
+    final errorColor = AppColors.destructive;
+    final textColor = AppColors.foreground;
 
     return ThemeData(
       useMaterial3: true,
@@ -81,14 +79,13 @@ class AppTheme {
     );
   }
 
-  static ThemeData darkTheme([ThemeConfig? themeConfig]) {
-    // Use API config colors if provided, otherwise use default AppColors
-    final primaryColor = themeConfig?.getPrimaryColor() ?? AppColors.primary;
-    final secondaryColor = themeConfig?.getSecondaryColor() ?? AppColors.secondary;
-    final cardColor = themeConfig?.getCardColor() ?? AppColors.darkCard;
-    final backgroundColor = themeConfig?.getBackgroundColor() ?? AppColors.dark;
-    final errorColor = themeConfig?.getErrorColor() ?? AppColors.destructive;
-    final textColor = themeConfig?.getTextColor() ?? Colors.white;
+  static ThemeData darkTheme() {
+    final primaryColor = AppColors.primary;
+    final secondaryColor = AppColors.secondary;
+    final cardColor = AppColors.darkCard;
+    final backgroundColor = AppColors.dark;
+    final errorColor = AppColors.destructive;
+    final textColor = Colors.white;
 
     return ThemeData(
       useMaterial3: true,

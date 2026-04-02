@@ -283,7 +283,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+          colors: [AppColors.primary, AppColors.primaryLight],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.largeCard),
@@ -505,15 +505,15 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF7C3AED),
-                Color(0xFF5B21B6),
+                AppColors.primary,
+                AppColors.primaryLight,
                 Color(0xFF4C1D95),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7C3AED).withOpacity(0.4),
+                color: AppColors.primary.withOpacity(0.4),
                 blurRadius: 25,
                 offset: const Offset(0, 12),
               ),
@@ -1568,7 +1568,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
                                   context,
                                   Icons.payments_rounded,
                                   '${price.toInt()} ${isAr ? 'ريال' : 'SAR'}',
-                                  const Color(0xFF7C3AED),
+                                  AppColors.primary,
                                   isAr,
                                 ),
                               if (durationStr.isNotEmpty)
