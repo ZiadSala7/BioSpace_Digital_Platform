@@ -185,6 +185,19 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
     context.push(RouteNames.courseDetails, extra: courseData);
   }
 
+  void _openTransformation(BuildContext context, Map<String, dynamic> enrollment) {
+    final course = enrollment['course'] as Map<String, dynamic>?;
+    if (course == null) return;
+    final courseId = course['id']?.toString() ?? '';
+    if (courseId.isEmpty) return;
+    final title = course['title']?.toString() ?? '';
+    context.push(
+      RouteNames.courseTransformation,
+      extra: {'courseId': courseId, 'courseTitle': title},
+    );
+  }
+
+
   String _formatTimeAgo(BuildContext context, String? dateString) {
     if (dateString == null || dateString.isEmpty) {
       return context.l10n.timeAgo;
@@ -785,6 +798,38 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
                           '${durationHours.toInt()}${context.l10n.hourShort}'),
                       _buildMiniStat(Icons.play_lesson_rounded,
                           context.l10n.lessonsCount(totalLessons)),
+                      GestureDetector(
+                        onTap: () => _openTransformation(context, enrollment),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.18),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'التحول',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),

@@ -552,12 +552,12 @@ class _SplashScreenState extends State<SplashScreen>
               colors: [Colors.white, Color(0xFFE0D4FF)],
             ).createShader(bounds),
             child: Text(
-              'STP',
+              'BioSpace Digital Platform',
               style: GoogleFonts.cairo(
-                fontSize: 38,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-                letterSpacing: 2,
+                letterSpacing: 0.5,
               ),
             ),
           ),

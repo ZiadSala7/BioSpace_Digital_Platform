@@ -25,6 +25,7 @@ class RouteNames {
   static const String instructorCourseDetails = '/instructor/course-details';
   static const String instructorSessionDetails = '/instructor/session-details';
   static const String instructorScanQr = '/instructor/scan-qr';
+  static const String instructorAttendance = '/instructor/attendance';
 
   // Secondary screens
   static const String categories = '/categories';
@@ -34,6 +35,9 @@ class RouteNames {
   static const String myExams = '/my-exams';
   static const String notifications = '/notifications';
   static const String checkout = '/checkout';
+  static const String cart = '/cart';
+  static const String courseTransformation = '/course-transformation';
+  static const String courseCommunity = '/course-community';
   static const String liveCourses = '/live-courses';
   static const String downloads = '/downloads';
   static const String certificates = '/certificates';

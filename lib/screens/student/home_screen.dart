@@ -15,6 +15,7 @@ import '../../services/home_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/notifications_service.dart';
 import '../../services/teachers_service.dart';
+import '../../services/cart_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../data/sample_teachers.dart';
 
@@ -56,9 +57,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
     _bannerController.forward();
     _loadHomeData();
+    CartService.instance.ensureLoaded();
   }
 
   Future<void> _loadHomeData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -87,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
           print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
+        if (!mounted) return;
         setState(() => _userProfile = profile);
       } catch (e) {
         // User might not be logged in, continue
@@ -102,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           unreadOnly: true,
           perPage: 1,
         );
+        if (!mounted) return;
         setState(() =>
             _notificationsCount = notifications['meta']?['unread_count'] ?? 0);
       } catch (e) {
@@ -127,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         teachers = List<Map<String, dynamic>>.from(kSampleTeachers);
       }
 
+      if (!mounted) return;
       setState(() {
         _homeData = homeData;
         _featuredCourses = List<Map<String, dynamic>>.from(
@@ -147,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       // Show error message instead of fallback data
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
@@ -605,10 +612,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     // Actions
                     Row(
                       children: [
-                        // Settings
-                        _buildHeaderButton(
-                          icon: Icons.settings_outlined,
-                          onTap: () => context.push(RouteNames.settings),
+                        // Cart (replaces settings)
+                        ValueListenableBuilder<int>(
+                          valueListenable: CartService.instance.count,
+                          builder: (context, count, _) {
+                            return _buildHeaderButton(
+                              icon: Icons.shopping_cart_outlined,
+                              badge: count > 0 ? count.toString() : null,
+                              onTap: () => context.push(RouteNames.cart),
+                            );
+                          },
                         ),
                         const SizedBox(width: 8),
                         // Notifications with badge
@@ -756,9 +769,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final subtitle = heroBanner?['subtitle']?.toString();
     final buttonText = heroBanner?['button_text']?.toString();
     final imageUrl = heroBanner?['image']?.toString();
+    final fixedTitle = title?.replaceAll('STP', 'BioSpace App');
+    final fixedSubtitle =
+        subtitle?.replaceAll('STP', 'BioSpace Digital Platform');
 
     // Don't show banner if no data
-    if (title == null && subtitle == null) {
+    if (fixedTitle == null && fixedSubtitle == null) {
       return const SizedBox.shrink();
     }
 
@@ -915,11 +931,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ],
                                 ),
                               ),
-                            if (title != null) ...[
+                            if (fixedTitle != null) ...[
                               if (heroBanner?['badge'] != null)
                                 const SizedBox(height: 8),
                               Text(
-                                title,
+                                fixedTitle,
                                 style: GoogleFonts.cairo(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -928,10 +944,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                               ),
                             ],
-                            if (subtitle != null) ...[
-                              if (title != null) const SizedBox(height: 4),
+                            if (fixedSubtitle != null) ...[
+                              if (fixedTitle != null) const SizedBox(height: 4),
                               Text(
-                                subtitle,
+                                fixedSubtitle,
                                 style: GoogleFonts.cairo(
                                   fontSize: 12,
                                   color: Colors.white.withOpacity(0.85),
@@ -1296,8 +1312,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.purple.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.18),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1307,12 +1326,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     style: GoogleFonts.cairo(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.purple,
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_ios,
-                      size: 12, color: AppColors.purple),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: AppColors.primary,
+                  ),
                 ],
               ),
             ),
@@ -1669,18 +1691,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Color _parseColor(dynamic colorValue) {
-    if (colorValue == null) return const Color(0xFF6366F1);
-    if (colorValue is Color) return colorValue;
-    if (colorValue is String) {
-      // Handle hex color strings like "#7C3AED" or "7C3AED"
-      String hex = colorValue.replaceAll('#', '');
-      if (hex.length == 6) {
-        return Color(int.parse('FF$hex', radix: 16));
-      }
-    }
-    return const Color(0xFF6366F1);
-  }
+  // NOTE: We intentionally avoid using API-provided category colors here.
+  // Home categories are styled with AppColors.primary for consistent branding.
 
   Widget _getCategoryIcon(dynamic iconValue, Color color) {
     if (iconValue == null) {
@@ -1762,7 +1774,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final cat = categories[index];
-          final categoryColor = _parseColor(cat['color']);
           return SizedBox(
             width: 110,
             child: GestureDetector(
@@ -1791,10 +1802,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: categoryColor.withOpacity(0.12),
+                        color: AppColors.primary.withOpacity(0.10),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.18),
+                        ),
                       ),
-                      child: _getCategoryIcon(cat['icon'], categoryColor),
+                      child: _getCategoryIcon(cat['icon'], AppColors.primary),
                     ),
                     const SizedBox(height: 10),
                     Padding(

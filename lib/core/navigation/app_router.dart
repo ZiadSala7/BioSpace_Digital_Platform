@@ -17,6 +17,7 @@ import '../../screens/instructor/instructor_create_course_screen.dart';
 import '../../screens/instructor/instructor_course_details_screen.dart';
 import '../../screens/instructor/instructor_session_details_screen.dart';
 import '../../screens/instructor/instructor_scan_qr_screen.dart';
+import '../../screens/instructor/instructor_attendance_screen.dart';
 import '../../screens/secondary/categories_screen.dart';
 import '../../screens/secondary/course_details_screen.dart';
 import '../../screens/secondary/lesson_viewer_screen.dart';
@@ -34,6 +35,9 @@ import '../../screens/secondary/edit_profile_screen.dart';
 import '../../screens/secondary/change_password_screen.dart';
 import '../../screens/secondary/pdf_viewer_screen.dart';
 import '../../screens/secondary/center_attendance_screen.dart';
+import '../../screens/secondary/cart_screen.dart';
+import '../../screens/secondary/course_transformation_screen.dart';
+import '../../screens/secondary/course_community_screen.dart';
 import '../../screens/secondary/teachers_screen.dart';
 import '../../screens/secondary/teacher_details_screen.dart';
 import '../../screens/secondary/chat_conversations_screen.dart';
@@ -133,6 +137,13 @@ class AppRouter {
         pageBuilder: (context, state) => _buildPageWithTransition(
           key: state.pageKey,
           child: const InstructorScanQrScreen(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.instructorAttendance,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const InstructorAttendanceScreen(),
         ),
       ),
 
@@ -292,6 +303,39 @@ class AppRouter {
             course: state.extra as Map<String, dynamic>?,
           ),
         ),
+      ),
+      GoRoute(
+        path: RouteNames.cart,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const CartScreen(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.courseTransformation,
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return _buildPageWithTransition(
+            key: state.pageKey,
+            child: CourseTransformationScreen(
+              courseId: extra['courseId']?.toString() ?? '',
+              courseTitle: extra['courseTitle']?.toString() ?? '',
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: RouteNames.courseCommunity,
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return _buildPageWithTransition(
+            key: state.pageKey,
+            child: CourseCommunityScreen(
+              courseId: extra['courseId']?.toString() ?? '',
+              courseTitle: extra['courseTitle']?.toString() ?? '',
+            ),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.liveCourses,

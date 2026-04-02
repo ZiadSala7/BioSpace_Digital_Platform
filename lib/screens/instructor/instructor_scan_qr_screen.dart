@@ -24,6 +24,7 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
   bool _isProcessing = false;
   String? _lastScanned;
   String? _error;
+  String? _lastSuccess;
   bool _coursesLoading = true;
   List<Map<String, dynamic>> _courses = [];
   String? _selectedCourseId;
@@ -116,16 +117,19 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
       _isProcessing = true;
       _lastScanned = code;
       _error = null;
+      _lastSuccess = null;
     });
 
     try {
-      await TeacherDashboardService.instance.scanAttendance(
+      final res = await TeacherDashboardService.instance.scanAttendance(
         code,
         courseId: courseId,
         sessionTitle: sessionTitle,
       );
       if (!mounted) return;
       final isAr = Localizations.localeOf(context).languageCode == 'ar';
+      final msg = res['message']?.toString();
+      setState(() => _lastSuccess = msg?.isNotEmpty == true ? msg : null);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -169,7 +173,7 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: AppColors.purple,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         title: Text(
           isAr ? 'مسح QR للحضور' : 'Scan QR for Attendance',
@@ -179,6 +183,13 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => context.go(RouteNames.instructorProfile),
         ),
+        actions: [
+          IconButton(
+            tooltip: isAr ? 'لوحة الحضور' : 'Attendance dashboard',
+            onPressed: () => context.go(RouteNames.instructorAttendance),
+            icon: const Icon(Icons.fact_check_rounded),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -208,7 +219,7 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.purple,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -286,7 +297,7 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
                     height: 260,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: AppColors.purple,
+                        color: AppColors.primary,
                         width: 3,
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -307,7 +318,7 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.qr_code_scanner_rounded,
-                            size: 40, color: AppColors.purple),
+                            size: 40, color: AppColors.primary),
                         const SizedBox(height: 12),
                         Text(
                           isAr
@@ -327,8 +338,20 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.purple,
+                              color: AppColors.primary,
                             ),
+                          ),
+                        ],
+                        if (_lastSuccess != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            _lastSuccess!,
+                            style: GoogleFonts.cairo(
+                              fontSize: 12,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ],

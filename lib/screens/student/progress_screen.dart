@@ -426,6 +426,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                     ),
                                     const SizedBox(height: 16), // space-y-4
 
+                                    // Transformation System (Before / After + indicators + score)
+                                    _buildTransformationSection(),
+                                    const SizedBox(height: 16), // space-y-4
+
                                     // Rating of students - matches React: bg-white rounded-3xl p-5 shadow-sm
                                     Container(
                                       padding: const EdgeInsets.all(20), // p-5
@@ -927,6 +931,304 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  int _intFrom(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? '') ?? 0;
+  }
+
+  double _doubleFrom(dynamic v) {
+    if (v is double) return v;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '') ?? 0.0;
+  }
+
+  Widget _buildTransformationSection() {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
+    // Optional backend support (if present in the future)
+    final tf = _progressData?['transformation'];
+    final tfMap = tf is Map ? Map<String, dynamic>.from(tf) : null;
+
+    final beforeText = tfMap?['before']?.toString().trim();
+    final afterText = tfMap?['after']?.toString().trim();
+
+    final rawScore = tfMap?['score'] ?? tfMap?['transformation_score'];
+
+    // Fallback: derive a simple score from existing progress statistics (0..100)
+    final stats = _progressData?['statistics'];
+    final statsMap = stats is Map ? Map<String, dynamic>.from(stats) : null;
+    final completedLessons = _intFrom(
+      statsMap?['completed_lessons'] ?? statsMap?['lessons_completed'],
+    );
+    final totalLessons = _intFrom(
+      statsMap?['total_lessons'] ?? statsMap?['lessons_total'],
+    );
+    final completionRate =
+        totalLessons > 0 ? (completedLessons / totalLessons) : 0.0;
+
+    final score = rawScore != null
+        ? _doubleFrom(rawScore).clamp(0.0, 100.0)
+        : (completionRate * 100.0).clamp(0.0, 100.0);
+
+    final indicators = <Map<String, dynamic>>[
+      {
+        'label': isAr ? 'الالتزام' : 'Commitment',
+        'value': (tfMap?['commitment'] != null)
+            ? _doubleFrom(tfMap?['commitment']).clamp(0.0, 1.0)
+            : completionRate.clamp(0.0, 1.0),
+        'color': AppColors.primary,
+      },
+      {
+        'label': isAr ? 'الاستمرارية' : 'Consistency',
+        'value': (tfMap?['consistency'] != null)
+            ? _doubleFrom(tfMap?['consistency']).clamp(0.0, 1.0)
+            : (_chartData.isNotEmpty ? 0.65 : 0.45),
+        'color': AppColors.orange,
+      },
+      {
+        'label': isAr ? 'النتائج' : 'Results',
+        'value': (tfMap?['results'] != null)
+            ? _doubleFrom(tfMap?['results']).clamp(0.0, 1.0)
+            : (score / 100.0).clamp(0.0, 1.0),
+        'color': const Color(0xFF10B981),
+      },
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isAr ? 'نظام التحول' : 'Transformation',
+                        style: AppTextStyles.bodyMedium(
+                          color: AppColors.foreground,
+                        ).copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        isAr
+                            ? 'قبل / بعد + مؤشرات + درجة'
+                            : 'Before/After + indicators + score',
+                        style: AppTextStyles.bodySmall(
+                          color: AppColors.mutedForeground,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryLight],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${score.toStringAsFixed(0)}/100',
+                  style: AppTextStyles.bodySmall(
+                    color: Colors.white,
+                  ).copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Before / After tracking
+          Row(
+            children: [
+              Expanded(
+                child: _tfNoteCard(
+                  title: isAr ? 'قبل' : 'Before',
+                  icon: Icons.history_rounded,
+                  color: AppColors.orange,
+                  text: beforeText ??
+                      (isAr
+                          ? 'اكتب وضعك قبل بداية الدورة (ملاحظة قصيرة)'
+                          : 'Write your state before starting (short note)'),
+                  isPlaceholder: beforeText == null || beforeText.isEmpty,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _tfNoteCard(
+                  title: isAr ? 'بعد' : 'After',
+                  icon: Icons.rocket_launch_rounded,
+                  color: const Color(0xFF10B981),
+                  text: afterText ??
+                      (isAr
+                          ? 'اكتب ماذا تغير بعد الدورة (ملاحظة قصيرة)'
+                          : 'Write what changed after the course (short note)'),
+                  isPlaceholder: afterText == null || afterText.isEmpty,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Indicators
+          ...indicators.map((i) {
+            final v = (i['value'] as double?)?.clamp(0.0, 1.0) ?? 0.0;
+            final label = i['label']?.toString() ?? '';
+            final color = i['color'] as Color? ?? AppColors.primary;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        label,
+                        style: AppTextStyles.bodySmall(
+                          color: AppColors.foreground,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${(v * 100).toStringAsFixed(0)}%',
+                        style: AppTextStyles.bodySmall(
+                          color: AppColors.mutedForeground,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 8,
+                      value: v,
+                      backgroundColor: Colors.grey[100],
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          // CTA (UI-only for now)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                // UI-only placeholder: later can navigate to a dedicated transformation editor.
+                final snackText = isAr
+                    ? 'قريباً: صفحة إدخال قبل/بعد وقياس التحول'
+                    : 'Coming soon: Before/After editor + transformation tracking';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(snackText),
+                    backgroundColor: AppColors.primary,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.edit_rounded, size: 18),
+              label: Text(
+                isAr ? 'تحديث بيانات التحول' : 'Update transformation',
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tfNoteCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required String text,
+    required bool isPlaceholder,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: color.withOpacity(0.2)),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: AppTextStyles.bodySmall(
+                  color: AppColors.foreground,
+                ).copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            text,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySmall(
+              color: isPlaceholder ? AppColors.mutedForeground : AppColors.foreground,
+            ).copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }

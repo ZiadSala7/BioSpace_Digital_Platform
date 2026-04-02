@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/navigation/route_names.dart';
 import '../../services/courses_service.dart';
 import '../../services/exams_service.dart';
 import '../../core/api/api_client.dart';
+import '../../services/cart_service.dart';
 import '../../services/wishlist_service.dart';
 import '../../services/profile_service.dart';
 
@@ -631,17 +633,20 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.share_rounded,
-                        color: Colors.white,
-                        size: 20,
+                    GestureDetector(
+                      onTap: () => _shareCourse(course),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.share_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -659,6 +664,38 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
     if (course == null) {
       return const SizedBox.shrink();
     }
+
+    int intFrom(dynamic v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v?.toString() ?? '') ?? 0;
+    }
+
+    final totalSeats = intFrom(
+      course['total_seats'] ??
+          course['seats_total'] ??
+          course['capacity'] ??
+          course['max_students'] ??
+          course['seats'] ??
+          course['maxSeats'],
+    );
+    final bookedSeats = intFrom(
+      course['booked_seats'] ??
+          course['seats_booked'] ??
+          course['enrolled_count'] ??
+          course['students_count'] ??
+          course['booked'] ??
+          course['enrollments_count'],
+    );
+    final safeBooked = totalSeats > 0
+        ? bookedSeats.clamp(0, totalSeats)
+        : bookedSeats.clamp(0, 999999999);
+    final remainingSeats =
+        totalSeats > 0 ? (totalSeats - safeBooked).clamp(0, totalSeats) : 0;
+    final isOpen = totalSeats > 0 ? remainingSeats > 0 : true;
+    final seatProgress =
+        totalSeats > 0 ? (safeBooked / totalSeats).clamp(0.0, 1.0) : 0.0;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -774,9 +811,124 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               ),
             ],
           ),
+          if (totalSeats > 0) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.beige,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border.withOpacity(0.7)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isOpen
+                              ? AppColors.success.withOpacity(0.12)
+                              : AppColors.destructive.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isOpen
+                                ? AppColors.success.withOpacity(0.35)
+                                : AppColors.destructive.withOpacity(0.35),
+                          ),
+                        ),
+                        child: Text(
+                          isAr
+                              ? (isOpen ? 'مفتوح' : 'مغلق')
+                              : (isOpen ? 'Open' : 'Closed'),
+                          style: GoogleFonts.cairo(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: isOpen
+                                ? AppColors.success
+                                : AppColors.destructive,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$safeBooked/$totalSeats',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.foreground,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 7,
+                      value: seatProgress,
+                      backgroundColor: AppColors.border.withOpacity(0.35),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isOpen ? AppColors.primary : AppColors.destructive,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    isAr
+                        ? 'المقاعد المتبقية: $remainingSeats'
+                        : 'Seats remaining: $remainingSeats',
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.mutedForeground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _shareCourse(Map<String, dynamic>? course) async {
+    if (course == null) return;
+    final title = course['title']?.toString().trim();
+    final id = course['id']?.toString().trim();
+    final instructor = course['instructor'] is Map
+        ? (course['instructor'] as Map)['name']?.toString().trim()
+        : course['instructor']?.toString().trim();
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
+    final parts = <String>[
+      if (title != null && title.isNotEmpty) title,
+      if (instructor != null && instructor.isNotEmpty)
+        (isAr ? 'المدرب: $instructor' : 'Instructor: $instructor'),
+      if (id != null && id.isNotEmpty)
+        (isAr ? 'معرّف الدورة: $id' : 'Course ID: $id'),
+    ];
+    final text = parts.join('\n');
+    if (text.isEmpty) return;
+
+    try {
+      await Share.share(text);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAr ? 'تعذر مشاركة الدورة' : 'Could not share course',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Widget _buildStatChip(IconData icon, String value, Color color) {
@@ -1914,6 +2066,99 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               ),
             ),
             const SizedBox(width: 12),
+            if (_isEnrolled) ...[
+              GestureDetector(
+                onTap: () {
+                  final courseData = _courseData ?? course;
+                  final courseId = courseData?['id']?.toString() ?? '';
+                  if (courseId.isEmpty) return;
+                  final title = courseData?['title']?.toString() ?? '';
+                  context.push(
+                    RouteNames.courseCommunity,
+                    extra: {'courseId': courseId, 'courseTitle': title},
+                  );
+                },
+                child: Container(
+                  height: 56,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border.withOpacity(0.8)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.forum_rounded,
+                        color: AppColors.foreground,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'المجتمع',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.foreground,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            if (!_isEnrolled && !isFree) ...[
+              GestureDetector(
+                onTap: _isEnrolling
+                    ? null
+                    : () async {
+                        final courseData = _courseData ?? course;
+                        if (courseData == null) return;
+                        final added =
+                            await CartService.instance.addCourse(courseData);
+                        if (!mounted) return;
+                        final isAr =
+                            Localizations.localeOf(context).languageCode == 'ar';
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              added
+                                  ? (isAr
+                                      ? 'تمت الإضافة إلى السلة'
+                                      : 'Added to cart')
+                                  : (isAr
+                                      ? 'موجودة بالفعل في السلة'
+                                      : 'Already in cart'),
+                              style: GoogleFonts.cairo(),
+                            ),
+                            backgroundColor: added
+                                ? AppColors.success
+                                : AppColors.mutedForeground,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.25),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.add_shopping_cart_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
             Expanded(
               child: GestureDetector(
                 onTap: _isEnrolling
@@ -1939,8 +2184,86 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                         if (isFree) {
                           await _enrollInCourse();
                         } else {
-                          // If paid course, go to checkout
-                          context.push(RouteNames.checkout, extra: courseData);
+                          if (courseData == null) return;
+
+                          // Paid course: ask user whether to add to cart or pay now.
+                          final action = await showDialog<String>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                title: Text(
+                                  'اختر طريقة الاشتراك',
+                                  style: GoogleFonts.cairo(
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.foreground,
+                                  ),
+                                ),
+                                content: Text(
+                                  'هل تريد إضافة الدورة إلى السلة أم إكمال الدفع الآن؟',
+                                  style: GoogleFonts.cairo(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.mutedForeground,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, 'cart'),
+                                    child: Text(
+                                      'إضافة للسلة',
+                                      style: GoogleFonts.cairo(
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, 'pay'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'إكمال الدفع',
+                                      style: GoogleFonts.cairo(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (!mounted) return;
+                          if (action == 'cart') {
+                            final added =
+                                await CartService.instance.addCourse(courseData);
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  added
+                                      ? 'تمت إضافة الدورة إلى السلة'
+                                      : 'الدورة موجودة بالفعل في السلة',
+                                  style: GoogleFonts.cairo(),
+                                ),
+                                backgroundColor: added
+                                    ? AppColors.success
+                                    : AppColors.mutedForeground,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } else if (action == 'pay') {
+                            context.push(RouteNames.checkout, extra: courseData);
+                          }
                         }
                       },
                 child: Container(

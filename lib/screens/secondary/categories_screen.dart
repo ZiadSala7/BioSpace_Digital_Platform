@@ -296,6 +296,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   child: Column(
                     children: [
                       // Back button and title - matches React: gap-4 mb-4
+                      const SizedBox(height: 32),
                       Row(
                         children: [
                           GestureDetector(
@@ -335,7 +336,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                     ],
                   ),
                 ),
-
+                const SizedBox(height: 40),
                 // Categories Grid - matches React: px-4 -mt-6
                 Expanded(
                   child: Transform.translate(
