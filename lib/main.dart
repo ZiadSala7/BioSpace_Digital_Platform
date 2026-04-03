@@ -28,7 +28,7 @@ void main() async {
     debugPrint('Screen protection initialization error: $e');
   }
 
-  // Initialize app config provider
+  // Initialize app config Provider
   final configProvider = AppConfigProvider();
   await configProvider.initialize();
 
