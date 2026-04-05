@@ -8,6 +8,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/navigation/route_names.dart';
+import '../../core/course/course_wave_info.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../widgets/bottom_nav.dart';
 import '../../widgets/premium_course_card.dart';
@@ -1878,6 +1879,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildHorizontalCourseCard(Map<String, dynamic> course) {
+    final wave = CourseWaveInfo.fromMap(course);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return GestureDetector(
       onTap: () => _handleCourseClick(course),
       child: Container(
@@ -2003,6 +2006,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (!wave.displayAsOpen &&
+                      (wave.hasSeatMetrics || wave.statusRaw.isNotEmpty)) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      isAr ? 'الموجة مغلقة' : 'Wave closed',
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.destructive,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     course['instructor']?['name'] ?? course['instructor'] ?? '',

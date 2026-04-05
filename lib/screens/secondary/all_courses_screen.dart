@@ -8,6 +8,8 @@ import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
+import '../../core/course/course_wave_info.dart';
+import '../../core/course/course_wave_schedule_format.dart';
 import '../../widgets/bottom_nav.dart';
 import '../../services/courses_service.dart';
 
@@ -157,46 +159,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
         }
       }
 
-      // Debug-only: inject a sample course card to verify seats/progress/status UI.
-      if (kDebugMode &&
-          !coursesList.any((c) => (c['id']?.toString() ?? '') == '__debug__')) {
-        coursesList.insert(0, {
-          'id': '__debug__',
-          'title': 'BioSpace (Test) — Seats Preview',
-          'thumbnail': '',
-          'price': 0,
-          'is_free': true,
-          'rating': 4.8,
-          'instructor': {'name': 'Test Instructor'},
-          'category': {'name': ''},
-          // Seats
-          'capacity': 35,
-          'enrolled_count': 15,
-          // Keep existing stats compatible
-          'students_count': 15,
-        });
-      }
-
-      // Debug-only: test paid course for cart flow.
-      if (kDebugMode &&
-          !coursesList.any(
-              (c) => (c['id']?.toString() ?? '') == '__test_cart_1')) {
-        coursesList.insert(0, {
-          'id': '__test_cart_1',
-          'title': 'Test Course (Cart)',
-          'thumbnail': '',
-          'price': 120,
-          'is_free': false,
-          'rating': 4.6,
-          'instructor': {'name': 'Test Instructor'},
-          'category': {'name': ''},
-          // Seats (optional)
-          'capacity': 35,
-          'enrolled_count': 15,
-          'students_count': 15,
-        });
-      }
-
       // Safely parse total courses
       int totalCoursesValue = coursesList.length;
       if (response['meta']?['total'] != null) {
@@ -283,6 +245,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 14,
                               mainAxisSpacing: 14,
+                              // Slightly tighter cards; image 112px avoids repeat of old 150+0.46 overflow.
                               childAspectRatio: 0.46,
                             ),
                             itemCount: _courses.length,
@@ -637,35 +600,18 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
       }
     }
 
-    int _intFrom(dynamic v) {
-      if (v is int) return v;
-      if (v is num) return v.toInt();
-      return int.tryParse(v?.toString() ?? '') ?? 0;
-    }
-
-    // Seats (best-effort parsing from backend variations)
-    final totalSeats = _intFrom(
-      course['total_seats'] ??
-          course['seats_total'] ??
-          course['capacity'] ??
-          course['max_students'] ??
-          course['seats'] ??
-          course['maxSeats'],
-    );
-    final bookedSeats = _intFrom(
-      course['booked_seats'] ??
-          course['seats_booked'] ??
-          course['enrolled_count'] ??
-          course['students_count'] ??
-          course['booked'] ??
-          course['enrollments_count'],
-    );
-    final remainingSeats =
-        totalSeats > 0 ? (totalSeats - bookedSeats).clamp(0, totalSeats) : 0;
-    final isOpen = totalSeats > 0 ? remainingSeats > 0 : true;
-    final seatProgress =
-        totalSeats > 0 ? (bookedSeats / totalSeats).clamp(0.0, 1.0) : 0.0;
+    final wave = CourseWaveInfo.fromMap(course);
+    final totalSeats = wave.totalCapacity ?? 0;
+    final bookedSeats = totalSeats > 0
+        ? wave.bookedSeats.clamp(0, totalSeats)
+        : wave.bookedSeats;
+    final remainingSeats = wave.remainingSeats;
+    final seatOpen = wave.canEnroll;
+    final onWaitlist = wave.userOnWaitlist && !wave.canEnroll;
+    final seatProgress = wave.seatProgress;
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final showWaveRow =
+        wave.hasSeatMetrics || wave.statusRaw.isNotEmpty || wave.hasSchedule;
 
     return GestureDetector(
       onTap: () {
@@ -690,7 +636,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
             Stack(
               children: [
                 Container(
-                  height: 150,
+                  height: 112,
                   decoration: BoxDecoration(
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(20)),
@@ -714,7 +660,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                             thumbnail,
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            height: 100,
+                            height: 112,
                             errorBuilder: (context, error, stackTrace) =>
                                 _buildNoImagePlaceholder(),
                             loadingBuilder: (context, child, loadingProgress) {
@@ -810,73 +756,172 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                         ),
                       ),
                     if (categoryName.isNotEmpty) const SizedBox(height: 6),
-                    // Seats + Status
-                    if (totalSeats > 0) ...[
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: isOpen
-                                  ? AppColors.success.withOpacity(0.12)
-                                  : AppColors.destructive.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: isOpen
-                                    ? AppColors.success.withOpacity(0.35)
-                                    : AppColors.destructive.withOpacity(0.35),
+                    if (showWaveRow) ...[
+                      if (wave.hasSchedule) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.14),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 1),
+                                child: Icon(
+                                  Icons.date_range_rounded,
+                                  size: 15,
+                                  color: AppColors.primary.withOpacity(0.9),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isAr ? 'موعد الموجة' : 'Wave schedule',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.2,
+                                        color: AppColors.mutedForeground,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      CourseWaveScheduleFormat.rangeCompactLine(
+                                        context,
+                                        wave,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.3,
+                                        color: AppColors.foreground,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (wave.hasSchedule &&
+                          (wave.hasSeatMetrics || wave.statusRaw.isNotEmpty))
+                        const SizedBox(height: 6),
+                      if (wave.hasSeatMetrics || wave.statusRaw.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: seatOpen
+                                    ? AppColors.success.withOpacity(0.12)
+                                    : onWaitlist
+                                        ? AppColors.primary.withOpacity(0.12)
+                                        : AppColors.destructive
+                                            .withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: seatOpen
+                                      ? AppColors.success.withOpacity(0.35)
+                                      : onWaitlist
+                                          ? AppColors.primary.withOpacity(0.35)
+                                          : AppColors.destructive
+                                              .withOpacity(0.35),
+                                ),
+                              ),
+                              child: Text(
+                                seatOpen
+                                    ? (isAr ? 'مفتوح' : 'Open')
+                                    : onWaitlist
+                                        ? (isAr ? 'قائمة انتظار' : 'Waitlist')
+                                        : (isAr ? 'مغلق' : 'Closed'),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: seatOpen
+                                      ? AppColors.success
+                                      : onWaitlist
+                                          ? AppColors.primary
+                                          : AppColors.destructive,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              isAr
-                                  ? (isOpen ? 'مفتوح' : 'مغلق')
-                                  : (isOpen ? 'Open' : 'Closed'),
-                              style: GoogleFonts.cairo(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: isOpen
-                                    ? AppColors.success
-                                    : AppColors.destructive,
+                            const Spacer(),
+                            if (wave.hasSeatMetrics)
+                              Text(
+                                '$bookedSeats/$totalSeats',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.foreground,
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (wave.hasSeatMetrics) ...[
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              minHeight: 6,
+                              value: seatProgress,
+                              backgroundColor:
+                                  AppColors.border.withOpacity(0.35),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                seatOpen
+                                    ? AppColors.primary
+                                    : onWaitlist
+                                        ? AppColors.primary
+                                        : AppColors.destructive,
                               ),
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(height: 6),
                           Text(
-                            '${bookedSeats.clamp(0, totalSeats)}/$totalSeats',
+                            isAr
+                                ? 'المقاعد المتبقية: $remainingSeats'
+                                : 'Seats remaining: $remainingSeats',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.cairo(
                               fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.foreground,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.mutedForeground,
                             ),
                           ),
+                          if (onWaitlist &&
+                              wave.waitlistPriorityRank != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              isAr
+                                  ? 'أولوية الموجة التالية: #${wave.waitlistPriorityRank}'
+                                  : 'Next wave priority: #${wave.waitlistPriorityRank}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.cairo(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ],
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
-                        child: LinearProgressIndicator(
-                          minHeight: 6,
-                          value: seatProgress,
-                          backgroundColor: AppColors.border.withOpacity(0.35),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isOpen ? AppColors.primary : AppColors.destructive,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        isAr
-                            ? 'المقاعد المتبقية: $remainingSeats'
-                            : 'Seats remaining: $remainingSeats',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.cairo(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.mutedForeground,
-                        ),
-                      ),
+                      ],
                       const SizedBox(height: 8),
                     ],
                     // Title
@@ -932,7 +977,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
 
   Widget _buildNoImagePlaceholder() {
     return Container(
-      height: 100,
+      height: 112,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         gradient: LinearGradient(
@@ -1055,7 +1100,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 100,
+                  height: 112,
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius:

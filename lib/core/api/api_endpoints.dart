@@ -2,10 +2,11 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseUrl = 'https://bio-space.anmka.com/';
+  /// REST API lives under `/api` on this host (root is the Next.js web app).
+  static const String baseUrl = 'https://bio-space.anmka.com/api';
 
-  /// Base URL for images and media files
-  static const String imageBaseUrl = 'https://stp.anmka.com';
+  /// Base URL for images and media files (same host as API unless CDN differs).
+  static const String imageBaseUrl = 'https://bio-space.anmka.com';
 
   /// Helper method to convert relative image path to full URL
   static String getImageUrl(String? imagePath) {
@@ -74,10 +75,33 @@ class ApiEndpoints {
       '$baseUrl/courses/$courseId/lessons/$lessonId/content';
   static String courseLessonProgress(String courseId, String lessonId) =>
       '$baseUrl/courses/$courseId/lessons/$lessonId/progress';
+  static String courseTransformation(String courseId) =>
+      '$baseUrl/courses/$courseId/transformation';
 
   // Enrollment
   static String enrollCourse(String id) => '$baseUrl/courses/$id/enroll';
   static String get enrollments => '$baseUrl/enrollments';
+
+  /// Waitlist for full/closed waves (`docs/waitlist-backend-spec.md`).
+  static String courseWaitlist(String courseId, {String? waveId}) {
+    final base = '$baseUrl/courses/$courseId/waitlist';
+    if (waveId != null && waveId.isNotEmpty) {
+      return '$base?wave_id=${Uri.encodeComponent(waveId)}';
+    }
+    return base;
+  }
+
+  static String courseWaitlistMe(String courseId, {String? waveId}) {
+    final base = '$baseUrl/courses/$courseId/waitlist/me';
+    if (waveId != null && waveId.isNotEmpty) {
+      return '$base?wave_id=${Uri.encodeComponent(waveId)}';
+    }
+    return base;
+  }
+
+  /// Cosmic Imprint & Color Emotional Analysis (`docs/wellness-analysis-backend-spec.md`).
+  static String get cosmicImprint => '$baseUrl/wellness/cosmic-imprint';
+  static String get colorEmotionalAnalysis => '$baseUrl/wellness/color-emotional';
 
   // Payments & Checkout
   static String get payments => '$baseUrl/admin/payments';
@@ -190,7 +214,7 @@ class ApiEndpoints {
   // Chat (teacher-student)
   static String get chatConversations => '$baseUrl/chat/conversations';
 
-  /// Socket.IO base URL – https://stp.anmka.com, no port (default 443).
+  /// Socket.IO base URL – same host as [baseUrl], no port (default 443).
   /// Use with socket_io_client at path /api/socket.io.
   static String get chatSocketBaseUrl {
     final url =

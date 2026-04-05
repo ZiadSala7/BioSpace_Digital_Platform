@@ -1,6 +1,6 @@
 ## توثيق طلب/استجابة تسجيل الدخول الاجتماعي (Google / Apple)
 
-- **البيئة:** `https://stp.anmka.com/v1`
+- **البيئة:** `https://bio-space.anmka.com/api`
 - **الهدف:** إرسال توكن Google أو Apple (المولّد من Firebase/SDK) إلى السيرفر لإصدار توكن التطبيق (`accessToken` + `refreshToken`) المتوافق مع نماذج `AuthResponse` في المشروع.
 - **الهيدر المطلوب:** `Content-Type: application/json`
 
@@ -9,7 +9,7 @@
 **الطلب**
 ```
 POST /auth/social-login
-Host: stp.anmka.com
+Host: bio-space.anmka.com
 Content-Type: application/json
 
 {
@@ -37,8 +37,8 @@ Content-Type: application/json
       "name": "Ahmed Mohamed",
       "email": "ahmed@example.com",
       "phone": "+201234567890",
-      "avatar": "https://stp.anmka.com/storage/avatars/123.png",
-      "avatar_thumbnail": "https://stp.anmka.com/storage/avatars/123_thumb.png",
+      "avatar": "https://bio-space.anmka.com/storage/avatars/123.png",
+      "avatar_thumbnail": "https://bio-space.anmka.com/storage/avatars/123_thumb.png",
       "role": "student",
       "is_verified": true,
       "created_at": "2024-01-01T10:00:00Z"
@@ -64,7 +64,7 @@ Content-Type: application/json
 **الطلب**
 ```
 POST /auth/social-login
-Host: stp.anmka.com
+Host: bio-space.anmka.com
 Content-Type: application/json
 
 {

@@ -37,6 +37,7 @@ class RouteNames {
   static const String checkout = '/checkout';
   static const String cart = '/cart';
   static const String courseTransformation = '/course-transformation';
+  static const String wellnessAnalysis = '/wellness-analysis';
   static const String courseCommunity = '/course-community';
   static const String liveCourses = '/live-courses';
   static const String downloads = '/downloads';

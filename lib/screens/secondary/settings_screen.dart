@@ -437,6 +437,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () => context.push(RouteNames.chatConversations),
                       ),
 
+                      _buildSettingItem(
+                        icon: Icons.auto_awesome_outlined,
+                        label: Localizations.localeOf(context).languageCode ==
+                                'ar'
+                            ? 'البصمة الكونية وتحليل الألوان'
+                            : 'Cosmic Imprint & color analysis',
+                        onTap: () =>
+                            context.push(RouteNames.wellnessAnalysis),
+                      ),
+
                       // Language setting - matches React SettingItem
                       _buildSettingItem(
                         icon: Icons.language,

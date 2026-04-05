@@ -6,12 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../../core/course/course_wave_info.dart';
+import '../../core/course/course_wave_schedule_format.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/navigation/route_names.dart';
 import '../../services/courses_service.dart';
 import '../../services/exams_service.dart';
 import '../../core/api/api_client.dart';
 import '../../services/cart_service.dart';
+import '../../services/course_waitlist_service.dart';
 import '../../services/wishlist_service.dart';
 import '../../services/profile_service.dart';
 
@@ -38,6 +41,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
   bool _isInWishlist = false;
   bool _isTogglingWishlist = false;
   bool _isViewingOwnCourse = false;
+  bool _waitlistBusy = false;
 
   @override
   void initState() {
@@ -423,29 +427,37 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
     return Scaffold(
       backgroundColor: AppColors.beige,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Video Player Section
-              _buildVideoSection(),
-
-              // Content Section - Scrollable
-              Container(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildVideoSection(),
+            Expanded(
+              child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                 ),
+                clipBehavior: Clip.antiAlias,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Course Info Header
-                    _buildCourseHeader(course, finalIsFree, priceValue),
-
-                    // Tabs
-                    _buildTabs(),
-
-                    // Tab Content
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.5,
+                    // Scrollable header so tall wave cards never steal all height from TabBarView.
+                    Flexible(
+                      flex: 2,
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildCourseHeader(course, finalIsFree, priceValue),
+                            _buildTabs(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
                       child: TabBarView(
                         controller: _tabController,
                         children: [
@@ -458,12 +470,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-
-      // Bottom Action Button
       bottomNavigationBar: _buildBottomBar(course, finalIsFree),
     );
   }
@@ -665,37 +675,18 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
       return const SizedBox.shrink();
     }
 
-    int intFrom(dynamic v) {
-      if (v is int) return v;
-      if (v is num) return v.toInt();
-      return int.tryParse(v?.toString() ?? '') ?? 0;
-    }
-
-    final totalSeats = intFrom(
-      course['total_seats'] ??
-          course['seats_total'] ??
-          course['capacity'] ??
-          course['max_students'] ??
-          course['seats'] ??
-          course['maxSeats'],
-    );
-    final bookedSeats = intFrom(
-      course['booked_seats'] ??
-          course['seats_booked'] ??
-          course['enrolled_count'] ??
-          course['students_count'] ??
-          course['booked'] ??
-          course['enrollments_count'],
-    );
-    final safeBooked = totalSeats > 0
-        ? bookedSeats.clamp(0, totalSeats)
-        : bookedSeats.clamp(0, 999999999);
-    final remainingSeats =
-        totalSeats > 0 ? (totalSeats - safeBooked).clamp(0, totalSeats) : 0;
-    final isOpen = totalSeats > 0 ? remainingSeats > 0 : true;
-    final seatProgress =
-        totalSeats > 0 ? (safeBooked / totalSeats).clamp(0.0, 1.0) : 0.0;
+    final wave = CourseWaveInfo.fromMap(course);
+    final total = wave.totalCapacity ?? 0;
+    final safeBooked = total > 0
+        ? wave.bookedSeats.clamp(0, total)
+        : wave.bookedSeats.clamp(0, 999999999);
+    final seatOpen = wave.canEnroll;
+    final onWaitlist = wave.userOnWaitlist && !wave.canEnroll;
+    final seatProgress = wave.seatProgress;
+    final remainingSeats = wave.remainingSeats;
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final showWaveCard =
+        wave.hasSeatMetrics || wave.hasSchedule || wave.statusRaw.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -704,27 +695,32 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         children: [
           // Category Badge & Price
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.purple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  course['category'] is Map
-                      ? (course['category'] as Map)['name']?.toString() ??
-                          'التصميم'
-                      : course['category']?.toString() ?? 'التصميم',
-                  style: GoogleFonts.cairo(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.purple,
+              Expanded(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    course['category'] is Map
+                        ? (course['category'] as Map)['name']?.toString() ??
+                            'التصميم'
+                        : course['category']?.toString() ?? 'التصميم',
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.purple,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -757,6 +753,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               fontWeight: FontWeight.bold,
               color: AppColors.foreground,
             ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
 
@@ -774,36 +772,40 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                     const Icon(Icons.person, size: 16, color: AppColors.purple),
               ),
               const SizedBox(width: 8),
-              Text(
-                course['instructor'] is Map
-                    ? (course['instructor'] as Map)['name']?.toString() ??
-                        'المدرب'
-                    : course['instructor']?.toString() ?? 'المدرب',
-                style: GoogleFonts.cairo(
-                  fontSize: 14,
-                  color: AppColors.purple,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  course['instructor'] is Map
+                      ? (course['instructor'] as Map)['name']?.toString() ??
+                          'المدرب'
+                      : course['instructor']?.toString() ?? 'المدرب',
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    color: AppColors.purple,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
 
-          // Stats Row
-          Row(
+          // Stats (wrap on narrow widths)
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               _buildStatChip(
                 Icons.star_rounded,
                 _safeParseRating(course['rating']),
                 Colors.amber,
               ),
-              const SizedBox(width: 12),
               _buildStatChip(
                 Icons.people_rounded,
                 _safeParseCount(course['students_count'] ?? course['students']),
                 AppColors.purple,
               ),
-              const SizedBox(width: 12),
               _buildStatChip(
                 Icons.access_time_rounded,
                 '${_safeParseHours(course['duration_hours'] ?? course['hours'])}س',
@@ -811,7 +813,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               ),
             ],
           ),
-          if (totalSeats > 0) ...[
+          if (showWaveCard) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(14),
@@ -823,73 +825,246 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isOpen
-                              ? AppColors.success.withOpacity(0.12)
-                              : AppColors.destructive.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: isOpen
-                                ? AppColors.success.withOpacity(0.35)
-                                : AppColors.destructive.withOpacity(0.35),
+                  if (wave.hasSchedule) ...[
+                    Text(
+                      isAr ? 'الفترة الزمنية للموجة' : 'Wave period',
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.35,
+                        color: AppColors.mutedForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _waveScheduleDateCell(
+                            icon: Icons.event_available_outlined,
+                            label: isAr ? 'البداية' : 'Start',
+                            value: CourseWaveScheduleFormat.single(
+                              context,
+                              wave.startDate,
+                            ),
                           ),
                         ),
-                        child: Text(
-                          isAr
-                              ? (isOpen ? 'مفتوح' : 'مغلق')
-                              : (isOpen ? 'Open' : 'Closed'),
-                          style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: isOpen
-                                ? AppColors.success
-                                : AppColors.destructive,
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(top: 20, left: 6, right: 6),
+                          child: Icon(
+                            Icons.trending_flat_rounded,
+                            size: 22,
+                            color: AppColors.purple.withOpacity(0.4),
+                          ),
+                        ),
+                        Expanded(
+                          child: _waveScheduleDateCell(
+                            icon: Icons.event_busy_outlined,
+                            label: isAr ? 'النهاية' : 'End',
+                            value: CourseWaveScheduleFormat.single(
+                              context,
+                              wave.endDate,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (wave.hasSeatMetrics || wave.statusRaw.isNotEmpty)
+                      const SizedBox(height: 12),
+                  ],
+                  if (wave.hasSeatMetrics || wave.statusRaw.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: seatOpen
+                                ? AppColors.success.withOpacity(0.12)
+                                : onWaitlist
+                                    ? AppColors.primary.withOpacity(0.12)
+                                    : AppColors.destructive.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: seatOpen
+                                  ? AppColors.success.withOpacity(0.35)
+                                  : onWaitlist
+                                      ? AppColors.primary.withOpacity(0.35)
+                                      : AppColors.destructive.withOpacity(0.35),
+                            ),
+                          ),
+                          child: Text(
+                            seatOpen
+                                ? (isAr ? 'مفتوح' : 'Open')
+                                : onWaitlist
+                                    ? (isAr ? 'قائمة انتظار' : 'Waitlist')
+                                    : (isAr ? 'مغلق' : 'Closed'),
+                            style: GoogleFonts.cairo(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: seatOpen
+                                  ? AppColors.success
+                                  : onWaitlist
+                                      ? AppColors.primary
+                                      : AppColors.destructive,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (wave.hasSeatMetrics)
+                          Text(
+                            '$safeBooked/$total',
+                            style: GoogleFonts.cairo(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.foreground,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (wave.hasSeatMetrics) ...[
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          minHeight: 7,
+                          value: seatProgress,
+                          backgroundColor: AppColors.border.withOpacity(0.35),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            seatOpen
+                                ? AppColors.primary
+                                : onWaitlist
+                                    ? AppColors.primary
+                                    : AppColors.destructive,
                           ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 8),
                       Text(
-                        '$safeBooked/$totalSeats',
+                        isAr
+                            ? 'المقاعد المتبقية: $remainingSeats'
+                            : 'Seats remaining: $remainingSeats',
                         style: GoogleFonts.cairo(
                           fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.foreground,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.mutedForeground,
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      minHeight: 7,
-                      value: seatProgress,
-                      backgroundColor: AppColors.border.withOpacity(0.35),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isOpen ? AppColors.primary : AppColors.destructive,
+                    if (!wave.canEnroll &&
+                        (wave.userOnWaitlist || wave.canJoinWaitlist)) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: wave.userOnWaitlist
+                              ? AppColors.success.withOpacity(0.1)
+                              : AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: wave.userOnWaitlist
+                                ? AppColors.success.withOpacity(0.35)
+                                : AppColors.primary.withOpacity(0.25),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              wave.userOnWaitlist
+                                  ? Icons.verified_outlined
+                                  : Icons.info_outline_rounded,
+                              size: 18,
+                              color: wave.userOnWaitlist
+                                  ? AppColors.success
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                wave.userOnWaitlist
+                                    ? (isAr
+                                        ? 'أنت في قائمة الانتظار. أولوية التسجيل للموجة القادمة: ${wave.waitlistPriorityRank != null ? '#${wave.waitlistPriorityRank}' : '—'}.'
+                                        : 'You are on the waitlist. Next-wave priority: ${wave.waitlistPriorityRank != null ? '#${wave.waitlistPriorityRank}' : '—'}.')
+                                    : (isAr
+                                        ? 'انضم لقائمة الانتظار من الزر بالأسفل للحصول على أولوية في الموجة التالية.'
+                                        : 'Use the button below to join the waitlist and get priority for the next wave.'),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.foreground,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isAr
-                        ? 'المقاعد المتبقية: $remainingSeats'
-                        : 'Seats remaining: $remainingSeats',
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.mutedForeground,
-                    ),
-                  ),
+                    ],
+                  ],
                 ],
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _waveScheduleDateCell({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withOpacity(0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: AppColors.primary.withOpacity(0.9)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.cairo(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.mutedForeground,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.foreground,
+              height: 1.25,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -965,6 +1140,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
       ),
       child: TabBar(
         controller: _tabController,
+        isScrollable: true,
+        // tabAlignment: TabAlignment.fill,
         indicator: BoxDecoration(
           gradient: const LinearGradient(
             colors: [AppColors.primary, AppColors.primaryLight],
@@ -1355,6 +1532,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                           fontWeight: FontWeight.bold,
                           color: AppColors.purple,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Container(
@@ -1371,6 +1550,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                           fontWeight: FontWeight.w600,
                           color: AppColors.purple,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1484,6 +1665,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                       fontWeight: FontWeight.bold,
                       color: isLocked ? Colors.grey[500] : AppColors.foreground,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -1641,11 +1824,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      feature['text'] as String,
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        color: AppColors.foreground,
+                    Expanded(
+                      child: Text(
+                        feature['text'] as String,
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: AppColors.foreground,
+                        ),
                       ),
                     ),
                   ],
@@ -1987,6 +2172,138 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
     );
   }
 
+  String _userFacingError(Object e) {
+    if (e is ApiException) return e.message;
+    final s = e.toString();
+    if (s.startsWith('Exception: ')) return s.substring(11);
+    return s;
+  }
+
+  void _mergeCourseFields(Map<String, dynamic> patch) {
+    if (patch.isEmpty) return;
+    setState(() {
+      final base =
+          Map<String, dynamic>.from(_courseData ?? widget.course ?? {});
+      for (final e in patch.entries) {
+        base[e.key] = e.value;
+      }
+      _courseData = base;
+    });
+  }
+
+  Future<void> _joinWaitlistFlow() async {
+    final map = _courseData ?? widget.course;
+    if (map == null || _waitlistBusy) return;
+    final courseId = map['id']?.toString() ?? '';
+    if (courseId.isEmpty) return;
+    final waveId = CourseWaveInfo.waveIdFromCourse(map);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
+    setState(() => _waitlistBusy = true);
+    try {
+      final patch =
+          await CourseWaitlistService.instance.join(courseId, waveId: waveId);
+      _mergeCourseFields(patch);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAr ? 'تم تسجيلك في قائمة الانتظار' : 'You are on the waitlist',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _userFacingError(e),
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _waitlistBusy = false);
+    }
+  }
+
+  Future<void> _confirmLeaveWaitlist() async {
+    final map = _courseData ?? widget.course;
+    if (map == null || _waitlistBusy) return;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            isAr ? 'مغادرة قائمة الانتظار؟' : 'Leave waitlist?',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            isAr
+                ? 'لن تحصل على أولوية التسجيل للموجة القادمة إذا أكملت المغادرة.'
+                : 'You will lose next-wave enrollment priority if you leave.',
+            style: GoogleFonts.cairo(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child:
+                  Text(isAr ? 'إلغاء' : 'Cancel', style: GoogleFonts.cairo()),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                isAr ? 'مغادرة' : 'Leave',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.destructive,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (ok != true || !mounted) return;
+
+    final courseId = map['id']?.toString() ?? '';
+    final waveId = CourseWaveInfo.waveIdFromCourse(map);
+    setState(() => _waitlistBusy = true);
+    try {
+      final patch =
+          await CourseWaitlistService.instance.leave(courseId, waveId: waveId);
+      _mergeCourseFields(patch);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAr ? 'تمت إزالتك من قائمة الانتظار' : 'Removed from waitlist',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: AppColors.mutedForeground,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_userFacingError(e), style: GoogleFonts.cairo()),
+          backgroundColor: AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _waitlistBusy = false);
+    }
+  }
+
   Widget _buildBottomBar(Map<String, dynamic>? course, bool isFree) {
     if (_isViewingOwnCourse) {
       return Container(
@@ -2021,6 +2338,43 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         ),
       );
     }
+    final courseMapForWave = _courseData ?? course;
+    final wave = courseMapForWave != null
+        ? CourseWaveInfo.fromMap(courseMapForWave)
+        : CourseWaveInfo.fromMap({});
+    final waveFull =
+        !_isEnrolled && courseMapForWave != null && !wave.canEnroll;
+    final joinWaitlist = waveFull && wave.canJoinWaitlist;
+    final onWaitlist = waveFull && wave.userOnWaitlist;
+    final waveClosedHard = waveFull && !joinWaitlist && !onWaitlist;
+    final primaryBusy = _isEnrolling || _waitlistBusy;
+    final isArBar = Localizations.localeOf(context).languageCode == 'ar';
+
+    LinearGradient? primaryGradient;
+    Color? primaryColorFill;
+    if (primaryBusy) {
+      primaryGradient = null;
+      primaryColorFill = Colors.grey[300];
+    } else if (joinWaitlist) {
+      primaryGradient = const LinearGradient(
+        colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
+      );
+    } else if (onWaitlist) {
+      primaryGradient = LinearGradient(
+        colors: [AppColors.success, AppColors.success.withOpacity(0.88)],
+      );
+    } else if (waveClosedHard) {
+      primaryGradient = null;
+      primaryColorFill = Colors.grey[300];
+    } else {
+      primaryGradient = const LinearGradient(
+        colors: [AppColors.primary, AppColors.primaryLight],
+      );
+    }
+
+    final primaryFg =
+        primaryBusy || waveClosedHard ? Colors.grey : Colors.white;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -2070,12 +2424,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               GestureDetector(
                 onTap: () {
                   final courseData = _courseData ?? course;
-                  final courseId = courseData?['id']?.toString() ?? '';
+                  final map = courseData;
+                  if (map == null) return;
+                  final courseId = map['id']?.toString() ?? '';
                   if (courseId.isEmpty) return;
-                  final title = courseData?['title']?.toString() ?? '';
+                  final title = map['title']?.toString() ?? '';
+                  final threadId = CourseWaveInfo.communityThreadId(map);
                   context.push(
                     RouteNames.courseCommunity,
-                    extra: {'courseId': courseId, 'courseTitle': title},
+                    extra: {
+                      'courseId': courseId,
+                      'courseTitle': title,
+                      'communityThreadId': threadId,
+                    },
                   );
                 },
                 child: Container(
@@ -2084,7 +2445,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                   decoration: BoxDecoration(
                     color: AppColors.card,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border.withOpacity(0.8)),
+                    border:
+                        Border.all(color: AppColors.border.withOpacity(0.8)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -2108,6 +2470,37 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                 ),
               ),
               const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {
+                  final courseData = _courseData ?? course;
+                  final map = courseData;
+                  if (map == null) return;
+                  final courseId = map['id']?.toString() ?? '';
+                  if (courseId.isEmpty) return;
+                  final title = map['title']?.toString() ?? '';
+                  context.push(
+                    RouteNames.courseTransformation,
+                    extra: {
+                      'courseId': courseId,
+                      'courseTitle': title,
+                    },
+                  );
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
             ],
             if (!_isEnrolled && !isFree) ...[
               GestureDetector(
@@ -2116,11 +2509,50 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                     : () async {
                         final courseData = _courseData ?? course;
                         if (courseData == null) return;
+                        final isAr =
+                            Localizations.localeOf(context).languageCode ==
+                                'ar';
+                        if (waveFull) {
+                          final wv = CourseWaveInfo.fromMap(courseData);
+                          if (wv.canJoinWaitlist) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isAr
+                                      ? 'الموجة ممتلئة. يمكنك قائمة الانتظار للموجة التالية.'
+                                      : 'This wave is full. Join the waitlist for the next wave.',
+                                  style: GoogleFonts.cairo(),
+                                ),
+                                action: SnackBarAction(
+                                  label: isAr ? 'انضم' : 'Join',
+                                  textColor: Colors.white,
+                                  onPressed: _joinWaitlistFlow,
+                                ),
+                                backgroundColor: AppColors.primary,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isAr
+                                    ? 'هذه الموجة مغلقة أو مكتمل العدد'
+                                    : 'This wave is closed or full',
+                                style: GoogleFonts.cairo(),
+                              ),
+                              backgroundColor: AppColors.destructive,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
                         final added =
                             await CartService.instance.addCourse(courseData);
                         if (!mounted) return;
-                        final isAr =
-                            Localizations.localeOf(context).languageCode == 'ar';
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -2140,20 +2572,23 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                           ),
                         );
                       },
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.25),
+                child: Opacity(
+                  opacity: waveFull ? 0.45 : 1,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.25),
+                      ),
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.add_shopping_cart_rounded,
-                    color: AppColors.primary,
-                    size: 24,
+                    child: const Icon(
+                      Icons.add_shopping_cart_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
@@ -2161,10 +2596,40 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
             ],
             Expanded(
               child: GestureDetector(
-                onTap: _isEnrolling
+                onTap: primaryBusy
                     ? null
                     : () async {
                         final courseData = _courseData ?? course;
+                        if (courseData == null && !_isEnrolled) return;
+
+                        if (!_isEnrolled) {
+                          final w = CourseWaveInfo.fromMap(courseData!);
+                          if (!w.canEnroll) {
+                            if (w.userOnWaitlist) {
+                              await _confirmLeaveWaitlist();
+                              return;
+                            }
+                            if (w.canJoinWaitlist) {
+                              await _joinWaitlistFlow();
+                              return;
+                            }
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isArBar
+                                        ? 'هذه الموجة مغلقة أو مكتمل العدد'
+                                        : 'This wave is closed or full',
+                                    style: GoogleFonts.cairo(),
+                                  ),
+                                  backgroundColor: AppColors.destructive,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+                        }
 
                         // If already enrolled, go to first lesson
                         if (_isEnrolled) {
@@ -2244,8 +2709,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
                           if (!mounted) return;
                           if (action == 'cart') {
-                            final added =
-                                await CartService.instance.addCourse(courseData);
+                            final added = await CartService.instance
+                                .addCourse(courseData);
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -2262,57 +2727,81 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                               ),
                             );
                           } else if (action == 'pay') {
-                            context.push(RouteNames.checkout, extra: courseData);
+                            context.push(RouteNames.checkout,
+                                extra: courseData);
                           }
                         }
                       },
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    gradient: _isEnrolling
-                        ? null
-                        : const LinearGradient(
-                            colors: [AppColors.primary, AppColors.primaryLight],
-                          ),
-                    color: _isEnrolling ? Colors.grey[300] : null,
+                    gradient: primaryGradient,
+                    color: primaryColorFill,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (_isEnrolling)
+                      if (_isEnrolling || _waitlistBusy)
                         const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.grey),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.primary),
                           ),
                         )
                       else
                         Icon(
                           _isEnrolled
                               ? Icons.play_circle_rounded
-                              : isFree
-                                  ? Icons.play_circle_rounded
-                                  : Icons.shopping_cart_rounded,
-                          color: _isEnrolling ? Colors.grey : Colors.white,
+                              : joinWaitlist
+                                  ? Icons.confirmation_number_outlined
+                                  : onWaitlist
+                                      ? Icons.verified_outlined
+                                      : isFree
+                                          ? Icons.play_circle_rounded
+                                          : Icons.shopping_cart_rounded,
+                          color: primaryFg,
                           size: 22,
                         ),
-                      const SizedBox(width: 10),
-                      Text(
-                        _isEnrolling
-                            ? 'جاري الاشتراك...'
-                            : _isEnrolled
-                                ? 'ابدأ التعلم الآن'
-                                : isFree
-                                    ? 'اشترك مجاناً'
-                                    : 'اشترك في الدورة',
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: _isEnrolling ? Colors.grey[600] : Colors.white,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _isEnrolling
+                              ? 'جاري الاشتراك...'
+                              : _waitlistBusy
+                                  ? (isArBar
+                                      ? 'جاري التسجيل...'
+                                      : 'Please wait...')
+                                  : onWaitlist
+                                      ? (isArBar
+                                          ? 'قائمة انتظار${wave.waitlistPriorityRank != null ? ' (#${wave.waitlistPriorityRank})' : ''} · اضغط للإلغاء'
+                                          : 'On waitlist${wave.waitlistPriorityRank != null ? ' (#${wave.waitlistPriorityRank})' : ''} · tap to leave')
+                                      : joinWaitlist
+                                          ? (isArBar
+                                              ? 'انضم لقائمة الانتظار'
+                                              : 'Join waitlist')
+                                          : waveClosedHard
+                                              ? (isArBar
+                                                  ? 'الموجة مغلقة'
+                                                  : 'Wave closed')
+                                              : _isEnrolled
+                                                  ? 'ابدأ التعلم الآن'
+                                                  : isFree
+                                                      ? 'اشترك مجاناً'
+                                                      : 'اشترك في الدورة',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: primaryBusy || waveClosedHard
+                                ? Colors.grey[600]
+                                : primaryFg,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ],
@@ -2332,6 +2821,24 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
     final courseId = course['id']?.toString();
     if (courseId == null || courseId.isEmpty) return;
+
+    if (!CourseWaveInfo.fromMap(course).canEnroll) {
+      if (!mounted) return;
+      final isAr = Localizations.localeOf(context).languageCode == 'ar';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAr
+                ? 'هذه الموجة مغلقة أو مكتمل العدد'
+                : 'This wave is closed or full',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: AppColors.destructive,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isEnrolling = true);
 

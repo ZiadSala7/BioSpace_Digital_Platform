@@ -75,16 +75,21 @@ class _CourseTransformationScreenState extends State<CourseTransformationScreen>
       'score': _score,
       'updated_at': DateTime.now().toIso8601String(),
     };
-    await CourseTransformationService.instance.set(widget.courseId, payload);
+    final synced =
+        await CourseTransformationService.instance.set(widget.courseId, payload);
     if (!mounted) return;
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isAr ? 'تم حفظ بيانات التحول' : 'Transformation saved',
+          synced
+              ? (isAr ? 'تم حفظ بيانات التحول' : 'Transformation saved')
+              : (isAr
+                  ? 'تم الحفظ على الجهاز فقط — تعذر المزامنة مع الخادم'
+                  : 'Saved on device only — could not sync to server'),
           style: GoogleFonts.cairo(),
         ),
-        backgroundColor: AppColors.success,
+        backgroundColor: synced ? AppColors.success : AppColors.orange,
         behavior: SnackBarBehavior.floating,
       ),
     );

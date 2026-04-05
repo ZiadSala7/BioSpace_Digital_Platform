@@ -10,10 +10,13 @@ class CourseCommunityScreen extends StatefulWidget {
     super.key,
     required this.courseId,
     required this.courseTitle,
+    required this.communityThreadId,
   });
 
   final String courseId;
   final String courseTitle;
+  /// Storage key for this wave’s community (distinct per cohort).
+  final String communityThreadId;
 
   @override
   State<CourseCommunityScreen> createState() => _CourseCommunityScreenState();
@@ -41,7 +44,8 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final msgs = await CourseCommunityService.instance.listMessages(widget.courseId);
+    final msgs = await CourseCommunityService.instance
+        .listMessages(widget.communityThreadId);
     if (!mounted) return;
     setState(() {
       _messages = msgs;
@@ -70,7 +74,7 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
 
     _controller.clear();
     await CourseCommunityService.instance.addMessage(
-      widget.courseId,
+      widget.communityThreadId,
       text: text,
       senderName: senderName,
       senderRole: role,
@@ -88,7 +92,7 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         title: Text(
-          isAr ? 'مجتمع الدورة' : 'Course community',
+          isAr ? 'مجتمع الموجة' : 'Wave community',
           style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
@@ -104,7 +108,9 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
             color: Colors.white,
             child: Text(
               widget.courseTitle.isEmpty
-                  ? (isAr ? 'نقاش داخل الدورة' : 'Discussion inside the course')
+                  ? (isAr
+                      ? 'نقاش مع المسجلين في هذه الموجة'
+                      : 'Discussion for this wave only')
                   : widget.courseTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

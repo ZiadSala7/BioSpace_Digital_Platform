@@ -1149,22 +1149,37 @@ class _ProgressScreenState extends State<ProgressScreen> {
             );
           }),
 
-          // CTA (UI-only for now)
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: () {
-                // UI-only placeholder: later can navigate to a dedicated transformation editor.
-                final snackText = isAr
-                    ? 'قريباً: صفحة إدخال قبل/بعد وقياس التحول'
-                    : 'Coming soon: Before/After editor + transformation tracking';
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(snackText),
-                    backgroundColor: AppColors.primary,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                String? courseId = tfMap?['course_id']?.toString() ??
+                    tfMap?['courseId']?.toString();
+                courseId ??= _progressData?['course_id']?.toString() ??
+                    _progressData?['courseId']?.toString();
+                final enr = _progressData?['enrollment'];
+                if ((courseId == null || courseId.isEmpty) && enr is Map) {
+                  final m = Map<String, dynamic>.from(enr);
+                  courseId = m['course_id']?.toString();
+                  final c = m['course'];
+                  if ((courseId == null || courseId.isEmpty) && c is Map) {
+                    courseId = c['id']?.toString();
+                  }
+                }
+                if (courseId != null && courseId.isNotEmpty) {
+                  final title = tfMap?['course_title']?.toString() ??
+                      tfMap?['courseTitle']?.toString() ??
+                      '';
+                  context.push(
+                    RouteNames.courseTransformation,
+                    extra: {
+                      'courseId': courseId,
+                      'courseTitle': title,
+                    },
+                  );
+                  return;
+                }
+                context.push(RouteNames.enrolled);
               },
               icon: const Icon(Icons.edit_rounded, size: 18),
               label: Text(

@@ -6,7 +6,6 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/auth/forgot_password_screen.dart';
 import '../../screens/student/home_screen.dart';
-import '../../screens/student/courses_screen.dart';
 import '../../screens/student/progress_screen.dart';
 import '../../screens/student/student_dashboard_screen.dart';
 import '../../screens/instructor/instructor_home_screen.dart';
@@ -37,12 +36,14 @@ import '../../screens/secondary/pdf_viewer_screen.dart';
 import '../../screens/secondary/center_attendance_screen.dart';
 import '../../screens/secondary/cart_screen.dart';
 import '../../screens/secondary/course_transformation_screen.dart';
+import '../../screens/secondary/wellness_analysis_screen.dart';
 import '../../screens/secondary/course_community_screen.dart';
 import '../../screens/secondary/teachers_screen.dart';
 import '../../screens/secondary/teacher_details_screen.dart';
 import '../../screens/secondary/chat_conversations_screen.dart';
 import '../../screens/secondary/chat_messages_screen.dart';
 import 'route_names.dart';
+import '../course/course_wave_info.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -159,7 +160,7 @@ class AppRouter {
         path: RouteNames.courses,
         pageBuilder: (context, state) => _buildPageWithTransition(
           key: state.pageKey,
-          child: const CoursesScreen(),
+          child: const AllCoursesScreen(),
         ),
       ),
       GoRoute(
@@ -325,14 +326,28 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: RouteNames.wellnessAnalysis,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const WellnessAnalysisScreen(),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.courseCommunity,
         pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
+          final courseId = extra['courseId']?.toString() ?? '';
+          final thread = extra['communityThreadId']?.toString();
+          final communityThreadId = (thread != null && thread.isNotEmpty)
+              ? thread
+              : CourseWaveInfo.communityThreadId(extra);
           return _buildPageWithTransition(
             key: state.pageKey,
             child: CourseCommunityScreen(
-              courseId: extra['courseId']?.toString() ?? '',
+              courseId: courseId,
               courseTitle: extra['courseTitle']?.toString() ?? '',
+              communityThreadId:
+                  communityThreadId.isNotEmpty ? communityThreadId : courseId,
             ),
           );
         },

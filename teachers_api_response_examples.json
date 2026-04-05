@@ -1,6 +1,6 @@
 {
   "description": "API Response Examples for Teachers Endpoints",
-  "base_url": "https://stp.anmka.com/v1",
+  "base_url": "https://bio-space.anmka.com/api",
   
   "endpoints": {
     "get_all_teachers": {
@@ -241,7 +241,7 @@
   },
   
   "notes": {
-    "image_urls": "All image paths (avatar, thumbnail, image) should be relative paths. The client will automatically prepend the base URL (https://stp.anmka.com) to create full URLs.",
+    "image_urls": "All image paths (avatar, thumbnail, image) should be relative paths. The client will automatically prepend the media base URL (https://bio-space.anmka.com; paths often under /api/uploads) to create full URLs.",
     "localization": "Fields with '_en' suffix are English translations. The app uses Arabic as primary language.",
     "pagination": "When pagination is used, the response includes a 'meta' object with pagination information. If not paginated, 'data' can be a direct array.",
     "courses_in_teacher_details": "The 'courses' array in teacher details can be a simplified list or full course objects. The app handles both cases.",

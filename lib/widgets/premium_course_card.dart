@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/course/course_wave_info.dart';
 import '../core/design/app_colors.dart';
 
 /// Premium Course Card - Modern and Attractive Design
@@ -16,6 +17,8 @@ class PremiumCourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wave = CourseWaveInfo.fromMap(course);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final isFree = course['is_free'] ?? course['isFree'] ?? false;
     final imagePath = course['thumbnail'] ?? course['image'] ?? '';
     final categoryName = course['category'] is Map
@@ -157,6 +160,29 @@ class PremiumCourseCard extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                if (!wave.displayAsOpen &&
+                    (wave.hasSeatMetrics || wave.statusRaw.isNotEmpty))
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isAr ? 'مغلق' : 'Closed',
+                        style: GoogleFonts.cairo(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // Play button overlay
                 Positioned(

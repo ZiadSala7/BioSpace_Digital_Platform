@@ -8,14 +8,15 @@ class CourseCommunityService {
 
   static final CourseCommunityService instance = CourseCommunityService._();
 
-  static const _prefix = 'course_community_v1:';
+  static const _prefix = 'course_community_v2:';
 
-  String _key(String courseId) => '$_prefix$courseId';
+  String _key(String threadId) => '$_prefix$threadId';
 
-  Future<List<Map<String, dynamic>>> listMessages(String courseId) async {
+  /// Per-wave thread id (compute with `CourseWaveInfo.communityThreadId` from the course map).
+  Future<List<Map<String, dynamic>>> listMessages(String threadId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key(courseId));
+      final raw = prefs.getString(_key(threadId));
       if (raw == null || raw.isEmpty) return [];
       final decoded = jsonDecode(raw);
       if (decoded is List) {
@@ -31,24 +32,24 @@ class CourseCommunityService {
     }
   }
 
-  Future<void> _saveMessages(String courseId, List<Map<String, dynamic>> msgs) async {
+  Future<void> _saveMessages(String threadId, List<Map<String, dynamic>> msgs) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_key(courseId), jsonEncode(msgs));
+      await prefs.setString(_key(threadId), jsonEncode(msgs));
     } catch (e) {
       if (kDebugMode) print('❌ CourseCommunityService._saveMessages: $e');
     }
   }
 
   Future<void> addMessage(
-    String courseId, {
+    String threadId, {
     required String text,
     required String senderName,
     required String senderRole, // 'student' | 'instructor'
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
-    final msgs = await listMessages(courseId);
+    final msgs = await listMessages(threadId);
     final msg = <String, dynamic>{
       'id': DateTime.now().microsecondsSinceEpoch.toString(),
       'text': trimmed,
@@ -57,7 +58,7 @@ class CourseCommunityService {
       'created_at': DateTime.now().toIso8601String(),
     };
     final updated = [...msgs, msg];
-    await _saveMessages(courseId, updated);
+    await _saveMessages(threadId, updated);
   }
 }
 
