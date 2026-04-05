@@ -2,7 +2,7 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseUrl = 'https://stp.anmka.com/api';
+  static const String baseUrl = 'https://bio-space.anmka.com/';
 
   /// Base URL for images and media files
   static const String imageBaseUrl = 'https://stp.anmka.com';
