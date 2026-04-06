@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../core/api/api_client.dart';
 import '../core/api/api_endpoints.dart';
 
-/// Cosmic Imprint + Color Emotional Analysis (`docs/wellness-analysis-backend-spec.md`).
+/// Cosmic Imprint + Color Emotional Analysis (`docs/integration-insights-backend-spec.md`).
 class WellnessAnalysisService {
   WellnessAnalysisService._();
 

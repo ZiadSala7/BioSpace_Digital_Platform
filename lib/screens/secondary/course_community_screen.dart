@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/design/app_colors.dart';
 import '../../services/course_community_service.dart';
+import '../../services/profile_service.dart';
 
 class CourseCommunityScreen extends StatefulWidget {
   const CourseCommunityScreen({
@@ -11,12 +12,17 @@ class CourseCommunityScreen extends StatefulWidget {
     required this.courseId,
     required this.courseTitle,
     required this.communityThreadId,
+    this.waveId,
   });
 
   final String courseId;
   final String courseTitle;
-  /// Storage key for this wave’s community (distinct per cohort).
+
+  /// Legacy local cache key (per-wave thread id from [CourseWaveInfo.communityThreadId]).
   final String communityThreadId;
+
+  /// Backend wave scope when the API supports it.
+  final String? waveId;
 
   @override
   State<CourseCommunityScreen> createState() => _CourseCommunityScreenState();
@@ -28,6 +34,8 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
 
   bool _loading = true;
   List<Map<String, dynamic>> _messages = [];
+  String? _myUserId;
+  String? _profileName;
 
   @override
   void initState() {
@@ -44,8 +52,19 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final msgs = await CourseCommunityService.instance
-        .listMessages(widget.communityThreadId);
+    try {
+      final p = await ProfileService.instance.getProfile();
+      if (!mounted) return;
+      _myUserId = p['id']?.toString();
+      _profileName = p['name']?.toString();
+    } catch (_) {
+      // Bubbles fall back when user_id is unknown
+    }
+    final msgs = await CourseCommunityService.instance.listMessages(
+      widget.courseId,
+      waveId: widget.waveId,
+      localThreadId: widget.communityThreadId,
+    );
     if (!mounted) return;
     setState(() {
       _messages = msgs;
@@ -63,23 +82,40 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
     );
   }
 
-  Future<void> _send({required String role}) async {
+  Future<void> _send() async {
     final text = _controller.text;
     if (text.trim().isEmpty) return;
 
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final senderName = role == 'instructor'
-        ? (isAr ? 'المدرب' : 'Instructor')
+    final senderName = _profileName?.trim().isNotEmpty == true
+        ? _profileName!.trim()
         : (isAr ? 'طالب' : 'Student');
 
     _controller.clear();
-    await CourseCommunityService.instance.addMessage(
-      widget.communityThreadId,
+    final ok = await CourseCommunityService.instance.addMessage(
+      widget.courseId,
+      waveId: widget.waveId,
+      localThreadId: widget.communityThreadId,
       text: text,
       senderName: senderName,
-      senderRole: role,
+      senderRole: 'student',
+      senderUserId: _myUserId,
     );
     await _load();
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAr
+                ? 'تعذر الإرسال للخادم؛ تم حفظ الرسالة محلياً مؤقتاً'
+                : 'Could not reach server; message saved on this device only',
+            style: GoogleFonts.cairo(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -92,7 +128,7 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         title: Text(
-          isAr ? 'مجتمع الموجة' : 'Wave community',
+          isAr ? 'المجتمع' : 'Community',
           style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
@@ -133,9 +169,25 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
                     itemBuilder: (context, index) {
                       final m = _messages[index];
                       final role = m['sender_role']?.toString() ?? 'student';
-                      final isMine = role == 'student'; // UI-only: treat as current user
+                      final uid = m['user_id']?.toString();
+                      final isMine = uid != null &&
+                          uid.isNotEmpty &&
+                          _myUserId != null &&
+                          uid == _myUserId;
+                      final resolvedName = (() {
+                        final fromApi = m['sender_name']?.toString().trim();
+                        if (fromApi != null && fromApi.isNotEmpty) {
+                          return fromApi;
+                        }
+                        if (isMine &&
+                            _profileName != null &&
+                            _profileName!.trim().isNotEmpty) {
+                          return _profileName!.trim();
+                        }
+                        return '';
+                      })();
                       return _bubble(
-                        name: m['sender_name']?.toString() ?? '',
+                        name: resolvedName,
                         text: m['text']?.toString() ?? '',
                         role: role,
                         isMine: isMine,
@@ -233,7 +285,8 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
                 ),
                 decoration: InputDecoration(
                   hintText: isAr ? 'اكتب رسالة...' : 'Write a message...',
-                  hintStyle: GoogleFonts.cairo(color: AppColors.mutedForeground),
+                  hintStyle:
+                      GoogleFonts.cairo(color: AppColors.mutedForeground),
                   filled: true,
                   fillColor: AppColors.background,
                   contentPadding: const EdgeInsets.symmetric(
@@ -254,19 +307,10 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Column(
-              children: [
-                IconButton(
-                  tooltip: isAr ? 'إرسال كطالب' : 'Send as student',
-                  onPressed: () => _send(role: 'student'),
-                  icon: const Icon(Icons.send_rounded, color: AppColors.primary),
-                ),
-                IconButton(
-                  tooltip: isAr ? 'إرسال كمدرب (اختبار)' : 'Send as instructor (test)',
-                  onPressed: () => _send(role: 'instructor'),
-                  icon: const Icon(Icons.school_rounded, color: AppColors.orange),
-                ),
-              ],
+            IconButton(
+              tooltip: isAr ? 'إرسال' : 'Send',
+              onPressed: _send,
+              icon: const Icon(Icons.send_rounded, color: AppColors.primary),
             ),
           ],
         ),
@@ -274,4 +318,3 @@ class _CourseCommunityScreenState extends State<CourseCommunityScreen> {
     );
   }
 }
-

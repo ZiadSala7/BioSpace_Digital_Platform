@@ -163,4 +163,4 @@ If you change paths or field names, notify the app team so `ApiEndpoints` and pa
 
 ---
 
-*Document version: 1.0 — Integration insights (Cosmic Imprint + Color Emotional Analysis).*
+_Document version: 1.0 — Integration insights (Cosmic Imprint + Color Emotional Analysis)._

@@ -7,7 +7,7 @@ import '../../core/api/api_client.dart';
 import '../../core/design/app_colors.dart';
 import '../../services/wellness_analysis_service.dart';
 
-/// Cosmic Imprint + Color Emotional Analysis (see `docs/wellness-analysis-backend-spec.md`).
+/// Cosmic Imprint + Color Emotional Analysis (see `docs/integration-insights-backend-spec.md`).
 class WellnessAnalysisScreen extends StatefulWidget {
   const WellnessAnalysisScreen({super.key});
 
@@ -63,7 +63,54 @@ class _WellnessAnalysisScreenState extends State<WellnessAnalysisScreen>
     setState(() {
       if (c.isNotEmpty) _cosmicResult = c;
       if (ce.isNotEmpty) _colorResult = ce;
+      _applyCosmicInputsFromResponse(c);
+      _applyColorInputsFromResponse(ce);
     });
+  }
+
+  void _applyCosmicInputsFromResponse(Map<String, dynamic> payload) {
+    if (payload.isEmpty) return;
+    final inputs = payload['inputs'];
+    if (inputs is! Map) return;
+    final m = Map<String, dynamic>.from(inputs);
+    final birthDateRaw = m['birth_date']?.toString();
+    if (birthDateRaw != null && birthDateRaw.isNotEmpty) {
+      final parsed = DateTime.tryParse(birthDateRaw);
+      if (parsed != null) _birthDate = parsed;
+    }
+    final birthTimeRaw = m['birth_time']?.toString();
+    if (birthTimeRaw != null && birthTimeRaw.contains(':')) {
+      final parts = birthTimeRaw.split(':');
+      if (parts.length >= 2) {
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour != null && minute != null) {
+          _birthTime = TimeOfDay(hour: hour, minute: minute);
+        }
+      }
+    }
+    final place = m['birth_place']?.toString().trim() ?? '';
+    if (place.isNotEmpty) _placeController.text = place;
+  }
+
+  void _applyColorInputsFromResponse(Map<String, dynamic> payload) {
+    if (payload.isEmpty) return;
+    final inputs = payload['inputs'];
+    if (inputs is! Map) return;
+    final m = Map<String, dynamic>.from(inputs);
+    final selected = m['selected_colors'];
+    if (selected is List) {
+      final clean = selected
+          .map((e) => e.toString().trim().toUpperCase())
+          .where((e) => e.startsWith('#') && (e.length == 7 || e.length == 9))
+          .take(7)
+          .toList(growable: false);
+      _selectedHex
+        ..clear()
+        ..addAll(clean);
+    }
+    final notes = m['notes']?.toString().trim() ?? '';
+    if (notes.isNotEmpty) _colorNotesController.text = notes;
   }
 
   @override
@@ -121,10 +168,12 @@ class _WellnessAnalysisScreenState extends State<WellnessAnalysisScreen>
         final t = _birthTime!;
         body['birth_time'] =
             '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+      } else {
+        body['birth_time_unknown'] = true;
       }
       final place = _placeController.text.trim();
       if (place.isNotEmpty) {
-        body['birth_place_label'] = place;
+        body['birth_place'] = place;
       }
 
       final data =
@@ -174,9 +223,8 @@ class _WellnessAnalysisScreenState extends State<WellnessAnalysisScreen>
     setState(() => _colorLoading = true);
     try {
       final body = <String, dynamic>{
-        'colors': List<String>.from(_selectedHex),
+        'selected_colors': List<String>.from(_selectedHex),
         'locale': isAr ? 'ar' : 'en',
-        'context': 'app_wellness',
       };
       final notes = _colorNotesController.text.trim();
       if (notes.isNotEmpty) body['notes'] = notes;
@@ -240,28 +288,25 @@ class _WellnessAnalysisScreenState extends State<WellnessAnalysisScreen>
   }
 
   Widget _buildCosmicResult(Map<String, dynamic> data, bool isAr) {
-    final title = _pickLocalized(data, 'imprint_label', isAr).isNotEmpty
-        ? _pickLocalized(data, 'imprint_label', isAr)
-        : (data['imprint_key']?.toString() ?? '');
-    final summary = _pickLocalized(data, 'summary', isAr);
-    final integration = _pickLocalized(data, 'integration_analysis', isAr);
+    final report = _pickLocalized(data, 'report', isAr);
+    final sections = data['sections'];
+    final metadata = data['metadata'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (title.isNotEmpty)
+        if (report.isNotEmpty) ...[
           Text(
-            title,
+            isAr ? 'النتيجة' : 'Result',
             style: GoogleFonts.cairo(
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: AppColors.foreground,
+              color: AppColors.primary,
             ),
           ),
-        if (summary.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
-            summary,
+            report,
             style: GoogleFonts.cairo(
               fontSize: 13,
               height: 1.45,
@@ -269,247 +314,140 @@ class _WellnessAnalysisScreenState extends State<WellnessAnalysisScreen>
             ),
           ),
         ],
-        if (integration.isNotEmpty) ...[
+        if (sections is List && sections.isNotEmpty) ...[
           const SizedBox(height: 12),
+          ...sections.map((section) {
+            if (section is! Map) return const SizedBox.shrink();
+            final s = Map<String, dynamic>.from(section);
+            final title = _pickLocalized(s, 'title', isAr);
+            final body = _pickLocalized(s, 'body', isAr);
+            if (title.isEmpty && body.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      body,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        height: 1.45,
+                        color: AppColors.mutedForeground,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+        ],
+        if (metadata is Map && metadata.isNotEmpty) ...[
+          const SizedBox(height: 8),
           Text(
-            isAr ? 'تحليل التكامل' : 'Integration',
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+            _pickLocalized(
+              Map<String, dynamic>.from(metadata),
+              'model_version',
+              isAr,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            integration,
             style: GoogleFonts.cairo(
-              fontSize: 12,
-              height: 1.45,
+              fontSize: 10,
               color: AppColors.mutedForeground,
             ),
           ),
         ],
-        _buildElements(
-          data['elements'],
-          title: isAr ? 'العناصر' : 'Elements',
-        ),
-        _buildTraitChips(data['traits']),
-        _buildNarrativeBlocks(data['narrative_blocks'], isAr),
       ],
     );
   }
 
-  Widget _buildElements(dynamic elements, {required String title}) {
-    if (elements is! Map) return const SizedBox.shrink();
-    final m = Map<String, dynamic>.from(elements);
-    if (m.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.mutedForeground,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...m.entries.map((e) {
-            final v = e.value;
-            final score = v is num
-                ? v.toDouble().clamp(0.0, 1.0)
-                : double.tryParse(v?.toString() ?? '')?.clamp(0.0, 1.0) ?? 0.0;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          e.key,
-                          style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${(score * 100).round()}%',
-                        style: GoogleFonts.cairo(fontSize: 11),
-                      ),
-                    ],
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: score,
-                      minHeight: 6,
-                      backgroundColor: AppColors.border.withOpacity(0.35),
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTraitChips(dynamic traits) {
-    if (traits is! List || traits.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: traits.map((t) {
-          final label = t?.toString() ?? '';
-          if (label.isEmpty) return const SizedBox.shrink();
-          return Chip(
-            label: Text(label, style: GoogleFonts.cairo(fontSize: 11)),
-            backgroundColor: AppColors.lavenderLight,
-            padding: EdgeInsets.zero,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildNarrativeBlocks(dynamic blocks, bool isAr) {
-    if (blocks is! List || blocks.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: blocks.map((b) {
-          if (b is! Map) return const SizedBox.shrink();
-          final bm = Map<String, dynamic>.from(b);
-          final title = _pickLocalized(bm, 'title', isAr);
-          final body = _pickLocalized(bm, 'body', isAr);
-          if (title.isEmpty && body.isEmpty) return const SizedBox.shrink();
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title.isNotEmpty)
-                  Text(
-                    title,
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                if (body.isNotEmpty)
-                  Text(
-                    body,
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      height: 1.4,
-                      color: AppColors.foreground,
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   Widget _buildColorResult(Map<String, dynamic> data, bool isAr) {
-    final interp = _pickLocalized(data, 'interpretation', isAr);
-    final integration = _pickLocalized(data, 'integration_notes', isAr);
-    final emotions = data['dominant_emotions'];
+    final report = _pickLocalized(data, 'report', isAr);
+    final sections = data['sections'];
+    final inputs = data['inputs'];
+    final selectedColors =
+        inputs is Map ? (inputs['selected_colors'] as List?) : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (interp.isNotEmpty)
+        if (selectedColors is List && selectedColors.isNotEmpty) ...[
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: selectedColors
+                .map((c) => c.toString())
+                .where((hex) => hex.isNotEmpty)
+                .map(
+                  (hex) => Chip(
+                    label: Text(
+                      hex.toUpperCase(),
+                      style: GoogleFonts.cairo(fontSize: 11),
+                    ),
+                    backgroundColor: AppColors.lavenderLight,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (report.isNotEmpty)
           Text(
-            interp,
+            report,
             style: GoogleFonts.cairo(
               fontSize: 13,
               height: 1.45,
               color: AppColors.foreground,
             ),
           ),
-        if (integration.isNotEmpty) ...[
+        if (sections is List && sections.isNotEmpty) ...[
           const SizedBox(height: 12),
-          Text(
-            isAr ? 'ملاحظات التكامل' : 'Integration notes',
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            integration,
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              height: 1.45,
-              color: AppColors.mutedForeground,
-            ),
-          ),
-        ],
-        if (emotions is List && emotions.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            isAr ? 'المشاعر البارزة' : 'Dominant emotions',
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AppColors.mutedForeground,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...emotions.map((e) {
-            if (e is! Map) return const SizedBox.shrink();
-            final em = Map<String, dynamic>.from(e);
-            final label = _pickLocalized(em, 'label', isAr);
-            final key = em['key']?.toString() ?? '';
-            final score = em['score'];
-            final s = score is num ? score.toDouble() : 0.0;
-            final line = label.isNotEmpty ? label : key;
-            if (line.isEmpty) return const SizedBox.shrink();
+          ...sections.map((section) {
+            if (section is! Map) return const SizedBox.shrink();
+            final s = Map<String, dynamic>.from(section);
+            final title = _pickLocalized(s, 'title', isAr);
+            final body = _pickLocalized(s, 'body', isAr);
+            if (title.isEmpty && body.isEmpty) return const SizedBox.shrink();
             return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      line,
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
                       style: GoogleFonts.cairo(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
                       ),
                     ),
-                  ),
-                  Text(
-                    '${(s * 100).round()}%',
-                    style: GoogleFonts.cairo(fontSize: 11),
-                  ),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      body,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        height: 1.45,
+                        color: AppColors.mutedForeground,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
           }),
         ],
-        _buildElements(
-          data['emotion_spectrum'],
-          title: isAr ? 'طيف المشاعر' : 'Emotion spectrum',
-        ),
       ],
     );
   }

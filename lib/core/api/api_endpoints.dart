@@ -75,8 +75,18 @@ class ApiEndpoints {
       '$baseUrl/courses/$courseId/lessons/$lessonId/content';
   static String courseLessonProgress(String courseId, String lessonId) =>
       '$baseUrl/courses/$courseId/lessons/$lessonId/progress';
+  /// Per-user course transformation payload (`docs/course-transformation-backend-spec.md`).
   static String courseTransformation(String courseId) =>
       '$baseUrl/courses/$courseId/transformation';
+
+  /// Per-wave course community chat (`docs/course-community-backend-spec.md`).
+  static String courseCommunityMessages(String courseId, {String? waveId}) {
+    final base = '$baseUrl/courses/$courseId/community/messages';
+    if (waveId != null && waveId.isNotEmpty) {
+      return '$base?wave_id=${Uri.encodeComponent(waveId)}';
+    }
+    return base;
+  }
 
   // Enrollment
   static String enrollCourse(String id) => '$baseUrl/courses/$id/enroll';
@@ -99,9 +109,9 @@ class ApiEndpoints {
     return base;
   }
 
-  /// Cosmic Imprint & Color Emotional Analysis (`docs/wellness-analysis-backend-spec.md`).
-  static String get cosmicImprint => '$baseUrl/wellness/cosmic-imprint';
-  static String get colorEmotionalAnalysis => '$baseUrl/wellness/color-emotional';
+  /// Cosmic Imprint & Color Emotional Analysis (`docs/integration-insights-backend-spec.md`).
+  static String get cosmicImprint => '$baseUrl/insights/cosmic-imprint';
+  static String get colorEmotionalAnalysis => '$baseUrl/insights/color-emotional';
 
   // Payments & Checkout
   static String get payments => '$baseUrl/admin/payments';

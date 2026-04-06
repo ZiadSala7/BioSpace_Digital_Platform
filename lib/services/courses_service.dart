@@ -73,10 +73,7 @@ class CoursesService {
       final queryParams = <String, String>{
         'page': page.toString(),
         'per_page': perPage.toString(),
-        'price': price,
-        'level': level,
         'sort': sort,
-        'duration': duration,
       };
 
       // Add optional parameters only if they have non-empty values
@@ -96,34 +93,19 @@ class CoursesService {
         queryParams['instructor_id'] = instructorId.trim();
       }
 
-      // Build URL manually to match API expectations
-      // API expects search and category_id even if empty
-      final baseUrl = ApiEndpoints.courses;
-      final queryParts = <String>[];
-
-      queryParts.add('page=${page.toString()}');
-      queryParts.add('per_page=${perPage.toString()}');
-      queryParts.add(
-          'search=${search != null && search.trim().isNotEmpty ? Uri.encodeComponent(search.trim()) : ''}');
-      queryParts.add(
-          'category_id=${categoryId != null && categoryId.trim().isNotEmpty ? Uri.encodeComponent(categoryId.trim()) : ''}');
-
-      if (subcategoryId != null && subcategoryId.trim().isNotEmpty) {
-        queryParts
-            .add('subcategory_id=${Uri.encodeComponent(subcategoryId.trim())}');
+      if (price.trim().isNotEmpty && price != 'all') {
+        queryParams['price'] = price;
       }
 
-      if (instructorId != null && instructorId.trim().isNotEmpty) {
-        queryParts
-            .add('instructor_id=${Uri.encodeComponent(instructorId.trim())}');
+      if (level.trim().isNotEmpty && level != 'all') {
+        queryParams['level'] = level;
       }
 
-      queryParts.add('price=$price');
-      queryParts.add('level=$level');
-      queryParts.add('sort=$sort');
-      queryParts.add('duration=$duration');
-
-      final finalUrl = '$baseUrl?${queryParts.join('&')}';
+      if (duration.trim().isNotEmpty && duration != 'all') {
+        queryParams['duration'] = duration;
+      }
+      final queryString = Uri(queryParameters: queryParams).query;
+      final finalUrl = '${ApiEndpoints.courses}?$queryString';
 
       if (kDebugMode) {
         print('🔍 Courses API Request:');

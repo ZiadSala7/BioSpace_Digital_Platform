@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -28,11 +27,39 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
   final String _sortBy = 'newest'; // newest, rating, popular
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  Timer? _searchDebounce;
 
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _courses = [];
   int _totalCourses = 0;
+
+  List<Map<String, dynamic>> get _visibleCourses {
+    final query = _searchQuery.trim();
+    if (query.isEmpty) return _courses;
+    return _courses.where((course) => _matchesSearch(course, query)).toList();
+  }
+
+  int get _displayedCoursesCount {
+    if (_searchQuery.trim().isEmpty) return _totalCourses;
+    return _visibleCourses.length;
+  }
+
+  bool _matchesSearch(Map<String, dynamic> course, String query) {
+    String toText(dynamic value) => value?.toString() ?? '';
+
+    final title = toText(course['title']);
+    final description = toText(course['description']);
+    final instructor = course['instructor'] is Map
+        ? toText((course['instructor'] as Map)['name'])
+        : toText(course['instructor']);
+    final category = course['category'] is Map
+        ? toText((course['category'] as Map)['name'])
+        : toText(course['category']);
+
+    return title.contains(query) ||
+        description.contains(query) ||
+        instructor.contains(query) ||
+        category.contains(query);
+  }
 
   List<Map<String, dynamic>> _getPriceFilters(BuildContext context) => [
         {'value': 'all', 'label': context.l10n.all},
@@ -52,28 +79,12 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
   void initState() {
     super.initState();
     _loadData();
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _searchDebounce?.cancel();
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
-      if (_searchController.text != _searchQuery) {
-        if (!mounted) return;
-        setState(() {
-          _searchQuery = _searchController.text;
-        });
-        _loadCourses();
-      }
-    });
   }
 
   Future<void> _loadData() async {
@@ -126,7 +137,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
       response = await CoursesService.instance.getCourses(
         page: 1,
         perPage: 50,
-        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        search: null,
         categoryId: categoryId,
         price: price,
         sort: apiSort,
@@ -219,6 +230,8 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleCourses = _visibleCourses;
+
     return Scaffold(
       backgroundColor: AppColors.beige,
       body: Stack(
@@ -235,7 +248,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
               Expanded(
                 child: _isLoading
                     ? _buildCoursesSkeleton()
-                    : _courses.isEmpty
+                    : visibleCourses.isEmpty
                         ? _buildEmptyState()
                         : GridView.builder(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
@@ -245,12 +258,11 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 14,
                               mainAxisSpacing: 14,
-                              // Slightly tighter cards; image 112px avoids repeat of old 150+0.46 overflow.
                               childAspectRatio: 0.46,
                             ),
-                            itemCount: _courses.length,
+                            itemCount: visibleCourses.length,
                             itemBuilder: (context, index) {
-                              return _buildCourseCard(_courses[index]);
+                              return _buildCourseCard(visibleCourses[index]);
                             },
                           ),
               ),
@@ -322,7 +334,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                       ),
                     ),
                     Text(
-                      context.l10n.coursesAvailable(_totalCourses),
+                      context.l10n.coursesAvailable(_displayedCoursesCount),
                       style: GoogleFonts.cairo(
                         fontSize: 13,
                         color: Colors.white.withOpacity(0.7),
@@ -364,9 +376,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
               ),
-              onChanged: (value) {
-                // Search is handled by _onSearchChanged listener
-              },
+              onChanged: (value) => setState(() => _searchQuery = value),
             ),
           ),
         ],
@@ -632,7 +642,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
             Stack(
               children: [
                 Container(
@@ -679,7 +688,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                         )
                       : _buildNoImagePlaceholder(),
                 ),
-                // Gradient overlay only when image exists
                 if (thumbnail.isNotEmpty)
                   Container(
                     decoration: BoxDecoration(
@@ -695,7 +703,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                       ),
                     ),
                   ),
-                // Price Badge
                 Positioned(
                   top: 8,
                   left: 8,
@@ -731,14 +738,12 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
               ],
             ),
 
-            // Content
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Category
                     if (categoryName.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -924,7 +929,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                       ],
                       const SizedBox(height: 8),
                     ],
-                    // Title
                     Text(
                       course['title']?.toString() ?? context.l10n.noTitle,
                       style: GoogleFonts.cairo(
@@ -935,7 +939,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    // Instructor
                     if (instructorName.isNotEmpty)
                       Text(
                         instructorName,
@@ -943,7 +946,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                             fontSize: 10, color: AppColors.mutedForeground),
                       ),
                     const Spacer(),
-                    // Stats
                     Row(
                       children: [
                         const Icon(Icons.star_rounded,

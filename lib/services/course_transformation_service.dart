@@ -6,9 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api/api_client.dart';
 import '../core/api/api_endpoints.dart';
 
-/// Per-course transformation (before/after, sliders, score).
-/// Syncs with `GET/PUT …/courses/:id/transformation` when the API exists;
-/// always caches in [SharedPreferences] so the UI works offline.
+/// Per-user, per-course transformation (before/after, sliders, score).
+/// Syncs with `GET` / `PUT` / `POST` …/courses/:id/transformation — see
+/// `docs/course-transformation-backend-spec.md`.
+/// Always caches in [SharedPreferences] so the UI works offline.
 class CourseTransformationService {
   CourseTransformationService._();
 
@@ -44,11 +45,26 @@ class CourseTransformationService {
   }
 
   Map<String, dynamic>? _unwrapData(Map<String, dynamic> response) {
+    if (response['success'] == false) return null;
     final data = response['data'];
-    if (data is Map) {
-      return Map<String, dynamic>.from(data);
+    if (data == null) return null;
+    if (data is! Map) return null;
+    final m = Map<String, dynamic>.from(data);
+    final nested = m['transformation'];
+    if (nested is Map) {
+      return Map<String, dynamic>.from(nested);
     }
-    return null;
+    return m;
+  }
+
+  /// Normalizes score alias from API (`transformation_score`).
+  Map<String, dynamic> _normalizeForUi(Map<String, dynamic> raw) {
+    final out = Map<String, dynamic>.from(raw);
+    if (!out.containsKey('score') || out['score'] == null) {
+      final alt = out['transformation_score'];
+      if (alt != null) out['score'] = alt;
+    }
+    return out;
   }
 
   /// Load transformation: prefers server, falls back to local cache.
@@ -63,8 +79,9 @@ class CourseTransformationService {
       );
       final remote = _unwrapData(res);
       if (remote != null && remote.isNotEmpty) {
-        await _writeLocal(courseId, remote);
-        return remote;
+        final normalized = _normalizeForUi(remote);
+        await _writeLocal(courseId, normalized);
+        return normalized;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -77,16 +94,21 @@ class CourseTransformationService {
   /// Save locally, then sync to server. Returns `true` if the server accepted
   /// the write (or returned success); `false` if only local was saved.
   Future<bool> set(String courseId, Map<String, dynamic> value) async {
-    await _writeLocal(courseId, value);
+    final normalizedValue = _normalizeForUi(value);
+    await _writeLocal(courseId, normalizedValue);
     if (courseId.isEmpty) return false;
 
     try {
       final res = await ApiClient.instance.put(
         ApiEndpoints.courseTransformation(courseId),
-        body: value,
+        body: normalizedValue,
         requireAuth: true,
       );
       if (res['success'] == false) return false;
+      final remote = _unwrapData(res);
+      if (remote != null && remote.isNotEmpty) {
+        await _writeLocal(courseId, _normalizeForUi(remote));
+      }
       return true;
     } catch (e) {
       if (kDebugMode) {
@@ -95,10 +117,14 @@ class CourseTransformationService {
       try {
         final res = await ApiClient.instance.post(
           ApiEndpoints.courseTransformation(courseId),
-          body: value,
+          body: normalizedValue,
           requireAuth: true,
         );
         if (res['success'] == false) return false;
+        final remote = _unwrapData(res);
+        if (remote != null && remote.isNotEmpty) {
+          await _writeLocal(courseId, _normalizeForUi(remote));
+        }
         return true;
       } catch (e2) {
         if (kDebugMode) {

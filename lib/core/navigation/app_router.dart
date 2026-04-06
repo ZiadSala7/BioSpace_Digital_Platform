@@ -341,6 +341,8 @@ class AppRouter {
           final communityThreadId = (thread != null && thread.isNotEmpty)
               ? thread
               : CourseWaveInfo.communityThreadId(extra);
+          final waveRaw = extra['waveId'] ?? extra['wave_id'];
+          final waveId = waveRaw?.toString().trim();
           return _buildPageWithTransition(
             key: state.pageKey,
             child: CourseCommunityScreen(
@@ -348,6 +350,7 @@ class AppRouter {
               courseTitle: extra['courseTitle']?.toString() ?? '',
               communityThreadId:
                   communityThreadId.isNotEmpty ? communityThreadId : courseId,
+              waveId: (waveId != null && waveId.isNotEmpty) ? waveId : null,
             ),
           );
         },
